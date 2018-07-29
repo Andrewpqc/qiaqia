@@ -23,25 +23,6 @@ server_ns::server::~server(){
 }
 
 
-server_ns::client_info& server_ns::server::get_client_info_by_connfd(int connfd){
-    for(auto it=this->clients.begin();it!=this->clients.end();it++){
-        if(it->connfd==connfd){
-            return *it;
-            break;
-        }
-    }
-}
-
-void server_ns::server::remove_client(int connfd){
-    for(auto it=this->clients.begin();it!=this->clients.end();++it){
-        if(it->connfd==connfd){
-            this->clients.erase(it);
-            break;
-        }
-    }
-}
-
-
 int server_ns::server::init(){
     struct addrinfo hints, *listp, *p;
     int listenfd, rc, optval=1;
@@ -137,7 +118,8 @@ void server_ns::server::start_loop(){
                 client.client_port=static_cast<std::string>(port);
                 client.connfd=connfd;
                 client.is_nickname_set=false;
-                this->clients.push_back(client);
+                this->clients.insert(std::pair<int,client_info>(connfd,client));
+            
 
                 //add the conn fd to kernel event table
                 addfd(epfd, connfd, true);
@@ -170,17 +152,16 @@ int server_ns::server::get_msg_and_forward_to_clients(int connfd){
     int len = recv(connfd, buf, MAXLINE, 0);
 
     //get the current user info
-    server_ns::client_info& current_client=get_client_info_by_connfd(connfd);
+    server_ns::client_info& current_client=this->clients[connfd];
     std::cout<<"is set?:"<<current_client.is_nickname_set<<std::endl;
     if(!current_client.is_nickname_set){
-        //这句赋值不起作用
-        current_client.is_nickname_set=true;//这里赋值出错了
 
+        current_client.is_nickname_set=true;
         current_client.client_nickname=static_cast<std::string>(buf);
         sprintf(message, SERVER_WELCOME, current_client.client_nickname.c_str());
         for(auto it = this->clients.begin(); it != this->clients.end(); ++it) {
-           if(it->connfd != connfd){
-                if( send(it->connfd, message, MAXLINE, 0) < 0 ) {
+           if(it->first != connfd){
+                if( send(it->first, message, MAXLINE, 0) < 0 ) {
                     return -1;
                 }
            }
@@ -193,7 +174,7 @@ int server_ns::server::get_msg_and_forward_to_clients(int connfd){
         close(connfd);
         
         // 在服务端的客户列表中删除该客户端
-        this->remove_client(connfd);
+        this->clients.erase(connfd);
         
         std::cout << "ClientID = " << connfd 
              << " closed.\n now there are " 
@@ -216,8 +197,8 @@ int server_ns::server::get_msg_and_forward_to_clients(int connfd){
         // 遍历客户端列表依次发送消息，需要判断不要给来源客户端发
     
         for(auto it = this->clients.begin(); it != this->clients.end(); ++it) {
-           if(it->connfd != connfd){
-                if( send(it->connfd, message, MAXLINE, 0) < 0 ) {
+           if(it->first != connfd){
+                if( send(it->first, message, MAXLINE, 0) < 0 ) {
                     return -1;
                 }
            }

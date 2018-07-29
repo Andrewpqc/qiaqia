@@ -2,7 +2,7 @@
 #define _CHATROOM_SERVER_H_
 
 #include <string>
-#include <list>
+#include <map>
 namespace server_ns{
 
 typedef struct{
@@ -28,9 +28,8 @@ class server{
     client_info& get_client_info_by_connfd(int connfd);
 
   public:
+     std::map<int, client_info> clients;  
 
-    std::list<client_info> clients;
-    
     server(std::string port);
     int init();
     void start_loop();
