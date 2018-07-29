@@ -14,9 +14,23 @@ client_ns::client::client(std::string host, std::string port){
     this->is_nickname_set=false;
 }
 
-// client_ns::client::~client(){
-//     close(this->clientsock);
-// }
+void client_ns::client::show_help(){
+    std::cout << "Usage:" << std::endl;
+    std::cout << "     exit                    : disconnect to the server and quit." << std::endl;
+    std::cout << "     <message>               : send message to all online users that not block you." << std::endl;
+    std::cout << "     $ <cmd>                 : send a command to qiaqia server for status query." << std::endl;
+    std::cout << "     > <username> <message>  : send a message to a single user that not block you." << std::endl;
+    std::cout << "     # <username>            : block user"<<std::endl<<std::endl;
+    std::cout << "Example:"<<std::endl;
+    std::cout << "     clear                   : clear the screen, just like the clear in bash."<<std::endl;
+    std::cout << "     hello                   : send 'hello' to all online users that not block you."<<std::endl;
+    std::cout << "     $ show users            : show informations of all currently online users"<<std::endl;
+    std::cout << "     > bob hello             : send 'hello' to bob if bob not block you."<<std::endl;
+    std::cout << "     # bob                   : block messages from bob."<<std::endl;
+    std::cout << "     # !bob                  : unblock messages from bob."<<std::endl;
+    std::cout << "     # * !bob                : only recive messages from bob"<<std::endl<<std::endl;
+    std::cout << "OK,Now choose a nickname to start:";
+}
 
 void client_ns::client::close_sock(){
     if (pid){
@@ -74,7 +88,6 @@ int client_ns::client::init(){
 
     // 创建epoll
     epfd = epoll_create(EPOLL_SIZE);
-
     if (epfd < 0){
         perror("epfd error");
         exit(-1);
@@ -98,9 +111,8 @@ void client_ns::client::start_loop(){
         //子进程负责写入管道，因此先关闭读端
         close(pipe_fd[0]);
 
-        // 输入exit可以退出聊天室
-        std::cout << "You can input 'exit' to exit the chat room." << std::endl;
-        std::cout << "Chose a nickname for yourself:";
+        this->show_help();
+        
         
         // 如果客户端运行正常则不断读取输入发送给服务端
         while (isClientwork)
@@ -118,6 +130,11 @@ void client_ns::client::start_loop(){
             // 如果客户输出exit,退出
             if (strncasecmp(message, "exit", strlen("exit")) == 0)
                 isClientwork = false;
+            else if(strncasecmp(message,"clear",strlen("clear")) == 0){
+                // std::cout<<"\033[2J\n\033[0m"<<std::endl;
+                system("clear");
+                continue;
+            }
             //否则将用户的输入写入管道，发送给父进程
             else{
                 if(write(pipe_fd[1], message, strlen(message) - 1) < 0){

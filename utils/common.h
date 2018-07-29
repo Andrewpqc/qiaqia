@@ -32,5 +32,5 @@ static void addfd( int epollfd, int fd, bool enable_et )
     // 设置socket为nonblocking模式
     // 执行完就转向下一条指令，不管函数有没有返回。
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFD, 0)| O_NONBLOCK);
-    printf("fd added to epoll!\n\n");
+    // printf("fd added to epoll!\n\n");
 }

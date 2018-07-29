@@ -8,6 +8,7 @@
 int main(int argc,char **argv){
     cmdline::parser cmd;
     char logo[MAXLINE];
+
     cmd.add<std::string>("host", 'h', "host for the server,default 127.0.0.1", false, "127.0.0.1");
     cmd.add<std::string>("port", 'p', "port number to be connect, default 8080", false, "8080");
     cmd.parse_check(argc, argv);
@@ -26,8 +27,8 @@ int main(int argc,char **argv){
 
     //connected, show logo.
     printf("%s",logo);
-    // std::cout<<logo<<std::endl;
 
     client.start_loop();
+
     return 0;
 }

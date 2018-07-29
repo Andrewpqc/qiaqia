@@ -12,7 +12,6 @@ namespace client_ns {
 
 class client {
     private:
-        
         std::string nickname;
         std::string server_host;
         std::string server_port;
@@ -45,6 +44,7 @@ class client {
         int init();
         void close_sock();
         void start_loop();
+        void show_help();
         // void get_input_and_send_to_server();
         // void recv_msg_and_show();
 };
