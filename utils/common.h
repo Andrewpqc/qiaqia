@@ -7,11 +7,13 @@
 
 #define EPOLL_SIZE 5000
 #define CAUTION "There is only one int the char room!"
+
+
 // 新用户登录后的欢迎信息
-#define SERVER_WELCOME "Welcome you join to the chat room! Your chat ID is: Client #%d"
+#define SERVER_WELCOME "[%s] joined to the chat room!"
 
 // 其他用户收到消息的前缀
-#define SERVER_MESSAGE "ClientID %d say >> %s"
+#define SERVER_MESSAGE "User[%s]say >> %s"
 
 
 // 注册新的fd到epollfd中

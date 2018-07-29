@@ -23,9 +23,6 @@ int main(int argc,char **argv){
     //connected, show logo.
     std::cout<<static_cast<std::string>(ascii_logo)<<std::endl;
 
-
-
-
-
+    client.start_loop();
     return 0;
 }

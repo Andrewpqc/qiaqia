@@ -22,6 +22,16 @@ server_ns::server::~server(){
     close(this->epfd);
 }
 
+
+server_ns::client_info& server_ns::server::get_client_info_by_connfd(int connfd){
+    for(auto it=this->clients.begin();it!=this->clients.end();it++){
+        if(it->connfd==connfd){
+            return *it;
+            break;
+        }
+    }
+}
+
 void server_ns::server::remove_client(int connfd){
     for(auto it=this->clients.begin();it!=this->clients.end();++it){
         if(it->connfd==connfd){
@@ -95,46 +105,54 @@ int server_ns::server::init(){
 }
 
 void server_ns::server::start_loop(){
+
     struct sockaddr_storage clientaddr;
     char hostname[MAXLINE],port[MAXLINE];
     socklen_t clientlen;
+
     static struct epoll_event events[EPOLL_SIZE]; 
 
     while(1){
-        //epoll_events_count表示就绪事件的数目,此处阻塞了
+        
         int epoll_events_count = epoll_wait(this->epfd, events, EPOLL_SIZE, -1);
         if(epoll_events_count < 0) {
             perror("epoll failure");
             break;
         }
-
         std::cout << "epoll_events_count =" << epoll_events_count << std::endl;
         for(int i = 0; i < epoll_events_count; ++i)
         {
             int sockfd = events[i].data.fd;
-            //新用户连接
-            if(sockfd == this->listenfd){
-                clientlen = sizeof(struct sockaddr_storage);
-                // std::cout<<"accept"<<std::endl;
-                int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
             
+            if(sockfd == this->listenfd){ //new connection is comming.
+
+                //accept the new connection and get the client host and port
+                clientlen = sizeof(struct sockaddr_storage);
+                int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
                 Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
+
+                //collect the client info, store it to this->clients list
                 server_ns::client_info client;
                 client.client_host=static_cast<std::string>(hostname);
                 client.client_port=static_cast<std::string>(port);
                 client.connfd=connfd;
+                client.is_nickname_set=false;
                 this->clients.push_back(client);
+
+                //add the conn fd to kernel event table
+                addfd(epfd, connfd, true);
+
+                //log
                 printf("accept connection from (%s:%s)\n", hostname, port);
-            }else{//发来消息
-                int ret = this->get_msg_and_forward_to_clients(sockfd);
-                if(ret < 0) {
+
+            }else{//message is comming
+                if(this->get_msg_and_forward_to_clients(sockfd)< 0) {
                     perror("error");
                     Close(sockfd);
                     exit(-1);
                 }
             }
-        // this->get_msg_and_forward_to_clients(connfd);
-        //这里应该使用并发技术来处理请求
+        
     }
 }
 }
@@ -150,6 +168,25 @@ int server_ns::server::get_msg_and_forward_to_clients(int connfd){
     // 接收新消息
     std::cout << "read from client(clientID = " << connfd << ")" << std::endl;
     int len = recv(connfd, buf, MAXLINE, 0);
+
+    //get the current user info
+    server_ns::client_info& current_client=get_client_info_by_connfd(connfd);
+    std::cout<<"is set?:"<<current_client.is_nickname_set<<std::endl;
+    if(!current_client.is_nickname_set){
+        //这句赋值不起作用
+        current_client.is_nickname_set=true;//这里赋值出错了
+
+        current_client.client_nickname=static_cast<std::string>(buf);
+        sprintf(message, SERVER_WELCOME, current_client.client_nickname.c_str());
+        for(auto it = this->clients.begin(); it != this->clients.end(); ++it) {
+           if(it->connfd != connfd){
+                if( send(it->connfd, message, MAXLINE, 0) < 0 ) {
+                    return -1;
+                }
+           }
+        }
+        return len;
+    }
 
     // 如果客户端关闭了连接
     if(len == 0) {
@@ -174,7 +211,7 @@ int server_ns::server::get_msg_and_forward_to_clients(int connfd){
             return len;
         }
         // 格式化发送的消息内容
-        sprintf(message, SERVER_MESSAGE, connfd, buf);
+        sprintf(message, SERVER_MESSAGE, current_client.client_nickname.c_str(), buf);
 
         // 遍历客户端列表依次发送消息，需要判断不要给来源客户端发
     
@@ -189,5 +226,4 @@ int server_ns::server::get_msg_and_forward_to_clients(int connfd){
     return len;
 }
 
-}
-//namespace server_ns
+}//namespace server_ns

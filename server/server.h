@@ -10,6 +10,7 @@ typedef struct{
     std::string client_port;
     std::string client_nickname;
     int connfd;
+    bool is_nickname_set;
 } client_info;
 
 typedef struct{
@@ -20,13 +21,16 @@ typedef struct{
 class server{
   private:
     int listenfd;
-    std::list<client_info> clients;
     std::string listen_port;
     int epfd;
 
     void remove_client(int connfd);
+    client_info& get_client_info_by_connfd(int connfd);
 
   public:
+
+    std::list<client_info> clients;
+    
     server(std::string port);
     int init();
     void start_loop();
