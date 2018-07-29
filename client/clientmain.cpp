@@ -1,4 +1,5 @@
-#include <iostream>
+// #include <iostream>
+#include <cstdio>
 
 #include "client.h"
 #include "../utils/cmdline.h"
@@ -6,7 +7,7 @@
 
 int main(int argc,char **argv){
     cmdline::parser cmd;
-
+    char logo[MAXLINE];
     cmd.add<std::string>("host", 'h', "host for the server,default 127.0.0.1", false, "127.0.0.1");
     cmd.add<std::string>("port", 'p', "port number to be connect, default 8080", false, "8080");
     cmd.parse_check(argc, argv);
@@ -20,8 +21,12 @@ int main(int argc,char **argv){
     // if init error,return...
     if (client.init()<0) return 0;
     
+    // format the ascii logo
+    sprintf(logo,ascii_logo,host.c_str(),port.c_str());
+
     //connected, show logo.
-    std::cout<<static_cast<std::string>(ascii_logo)<<std::endl;
+    printf("%s",logo);
+    // std::cout<<logo<<std::endl;
 
     client.start_loop();
     return 0;

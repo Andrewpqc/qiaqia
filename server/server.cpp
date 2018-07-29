@@ -8,13 +8,12 @@
 #include "../utils/common.h"
 #include "../csapp/csapp.h"
 
-
-namespace server_ns {
+namespace server_ns{
 
 server_ns::server::server(std::string port){
-    this->listen_port=port;
-    this->epfd=0;
-    this->listenfd=0;
+    this->listen_port = port;
+    this->epfd = 0;
+    this->listenfd = 0;
 }
 
 server_ns::server::~server(){
@@ -22,35 +21,46 @@ server_ns::server::~server(){
     close(this->epfd);
 }
 
+int server_ns::server::broadcast(int sender_fd, char *msg, int recv_len){
+    for (auto it = this->clients.begin(); it != this->clients.end(); ++it){
+        if (it->first != sender_fd){
+            if (send(it->first, msg, MAXLINE, 0) < 0){
+                return -1;
+            }
+        }
+    }
+    return recv_len;
+}
 
 int server_ns::server::init(){
     struct addrinfo hints, *listp, *p;
-    int listenfd, rc, optval=1;
+    int listenfd, rc, optval = 1;
 
     /* Get a list of potential server addresses */
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_socktype = SOCK_STREAM;             /* Accept connections */
     hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; /* ... on any IP address */
     hints.ai_flags |= AI_NUMERICSERV;            /* ... using port number */
-    if ((rc = getaddrinfo(NULL, this->listen_port.c_str(), &hints, &listp)) != 0) {
-        fprintf(stderr, "getaddrinfo failed (port %s): %s\n", this->listen_port.c_str(), gai_strerror(rc));
+    if ((rc = getaddrinfo(NULL, this->listen_port.c_str(), &hints, &listp)) != 0){
+        fprintf(stderr, "getaddrinfo failed (port %s): %s\n", 
+            this->listen_port.c_str(), gai_strerror(rc));
         return -2;
     }
 
     /* Walk the list for one that we can bind to */
-    for (p = listp; p; p = p->ai_next) {
+    for (p = listp; p; p = p->ai_next){
         /* Create a socket descriptor */
-        if ((listenfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) 
-            continue;  /* Socket failed, try the next */
+        if ((listenfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0)
+            continue; /* Socket failed, try the next */
 
         /* Eliminates "Address already in use" error from bind */
-        setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,    //line:netp:csapp:setsockopt
-                   (const void *)&optval , sizeof(int));
+        setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, //line:netp:csapp:setsockopt
+                   (const void *)&optval, sizeof(int));
 
         /* Bind the descriptor to the address */
         if (bind(listenfd, p->ai_addr, p->ai_addrlen) == 0)
             break; /* Success */
-        if (close(listenfd) < 0) { /* Bind failed, try the next */
+        if (close(listenfd) < 0){ /* Bind failed, try the next */
             fprintf(stderr, "open_listenfd close failed: %s\n", strerror(errno));
             return -1;
         }
@@ -60,18 +70,17 @@ int server_ns::server::init(){
     freeaddrinfo(listp);
     if (!p) /* No address worked */
         return -1;
-    
-    /* Make it a listening socket ready to accept connection requests */
-    if (listen(listenfd, LISTENQ) < 0) {
-        close(listenfd);
-	    return -1;
-    }
 
+    /* Make it a listening socket ready to accept connection requests */
+    if (listen(listenfd, LISTENQ) < 0){
+        close(listenfd);
+        return -1;
+    }
 
     //在内核中创建事件表
     epfd = epoll_create(EPOLL_SIZE);
-    
-    if(epfd < 0) {
+
+    if (epfd < 0){
         perror("epfd error");
         exit(-1);
     }
@@ -79,67 +88,74 @@ int server_ns::server::init(){
     //往事件表里添加监听事件
     addfd(epfd, listenfd, true);
 
-
-    this->listenfd=listenfd;
+    this->listenfd = listenfd;
 
     return listenfd;
 }
 
 void server_ns::server::start_loop(){
-
-    struct sockaddr_storage clientaddr;
-    char hostname[MAXLINE],port[MAXLINE];
     socklen_t clientlen;
+    struct sockaddr_storage clientaddr;
+    char hostname[MAXLINE], port[MAXLINE];
 
-    static struct epoll_event events[EPOLL_SIZE]; 
+    static struct epoll_event events[EPOLL_SIZE];
 
-    while(1){
-        
+    while (true){
+        // the ready events
         int epoll_events_count = epoll_wait(this->epfd, events, EPOLL_SIZE, -1);
-        if(epoll_events_count < 0) {
+
+        if (epoll_events_count < 0){
             perror("epoll failure");
             break;
         }
-        std::cout << "epoll_events_count =" << epoll_events_count << std::endl;
-        for(int i = 0; i < epoll_events_count; ++i)
-        {
-            int sockfd = events[i].data.fd;
-            
-            if(sockfd == this->listenfd){ //new connection is comming.
 
+        // log the events count which are ready
+        std::cout << "epoll_events_count =" << epoll_events_count << std::endl;
+
+        // process the events that are ready
+        for (int i = 0; i < epoll_events_count; ++i){
+            //get the ready fd
+            int sockfd = events[i].data.fd;
+
+            //new connection is comming.
+            if (sockfd == this->listenfd){
                 //accept the new connection and get the client host and port
                 clientlen = sizeof(struct sockaddr_storage);
                 int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
                 Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
 
-                //collect the client info, store it to this->clients list
+                //collect the client info, inset it to this->clients set
                 server_ns::client_info client;
-                client.client_host=static_cast<std::string>(hostname);
-                client.client_port=static_cast<std::string>(port);
-                client.connfd=connfd;
-                client.is_nickname_set=false;
-                this->clients.insert(std::pair<int,client_info>(connfd,client));
-            
+                client.client_host = static_cast<std::string>(hostname);
+                client.client_port = static_cast<std::string>(port);
+                client.connfd = connfd;
+                client.is_nickname_set = false;
+                this->clients.insert(std::pair<int, client_info>(connfd, client));
 
-                //add the conn fd to kernel event table
+                //add the connfd to kernel event table
                 addfd(epfd, connfd, true);
 
                 //log
                 printf("accept connection from (%s:%s)\n", hostname, port);
-
-            }else{//message is comming
-                if(this->get_msg_and_forward_to_clients(sockfd)< 0) {
+            }
+            else{ //message is comming
+                if (this->get_msg_and_forward_to_clients(sockfd) < 0){
                     perror("error");
                     Close(sockfd);
                     exit(-1);
                 }
             }
-        
+        }
     }
 }
-}
 
-// get_msg_and_forward_to_clients
+/****************************************************************
+ * get the message from the clients and forword it to other clients
+ *      param: 
+ *              connfd : the connection socket of client
+ *      return 
+ *              the bytes count recvived from client  
+ ***************************************************************/
 int server_ns::server::get_msg_and_forward_to_clients(int connfd){
     // buf[MAXLINE] 接收新消息
     // message[MAXLINE] 保存格式化的消息
@@ -147,64 +163,61 @@ int server_ns::server::get_msg_and_forward_to_clients(int connfd){
     bzero(buf, MAXLINE);
     bzero(message, MAXLINE);
 
-    // 接收新消息
+    // recv new msg
     std::cout << "read from client(clientID = " << connfd << ")" << std::endl;
     int len = recv(connfd, buf, MAXLINE, 0);
 
-    //get the current user info
-    server_ns::client_info& current_client=this->clients[connfd];
-    std::cout<<"is set?:"<<current_client.is_nickname_set<<std::endl;
-    if(!current_client.is_nickname_set){
+    // get the current user info
+    server_ns::client_info &current_client = this->clients[connfd];
 
-        current_client.is_nickname_set=true;
-        current_client.client_nickname=static_cast<std::string>(buf);
+    // set the current user's nickname,this will be
+    // run for the first msg for every client
+    if (!current_client.is_nickname_set){
+        //set the 'is_nickname_set' flag to true
+        // and set the client_nickname
+        current_client.is_nickname_set = true;
+        current_client.client_nickname = static_cast<std::string>(buf);
+
+        //broadcast the welcome message to all other users
         sprintf(message, SERVER_WELCOME, current_client.client_nickname.c_str());
-        for(auto it = this->clients.begin(); it != this->clients.end(); ++it) {
-           if(it->first != connfd){
-                if( send(it->first, message, MAXLINE, 0) < 0 ) {
-                    return -1;
-                }
-           }
-        }
-        return len;
+        return this->broadcast(connfd, message, len);
+        
     }
 
-    // 如果客户端关闭了连接
-    if(len == 0) {
-        close(connfd);
+    // if the client close the connection
+    if (len == 0){
+        //close the server side connfd
+        Close(connfd);        
         
-        // 在服务端的客户列表中删除该客户端
+        //remove the client_info from the `clients` set
         this->clients.erase(connfd);
-        
-        std::cout << "ClientID = " << connfd 
-             << " closed.\n now there are " 
-             << this->clients.size()
-             << " client in the char room"
-             << std::endl;
+
+        //print log to the server side stdout
+        std::cout << "ClientID = " << connfd
+                  << " closed.\nnow there are "
+                  << this->clients.size()
+                  << " client in the chat room"
+                  << std::endl;
+
+        // broadcast the leave info
+        sprintf(message, LEAVE_INFO, current_client.client_nickname.c_str());
+        return this->broadcast(connfd, message, len);
     }
-    // 发送广播消息给所有客户端
-    else 
-    {
-        // 判断是否聊天室还有其他客户端
-        if(this->clients.size() == 1) { 
-            // 发送提示消息
-            send(connfd, CAUTION, strlen(CAUTION), 0);
-            return len;
+    else{
+        // if there only one user in the chat room,
+        // send caution message
+        if (this->clients.size() == 1){
+            if (send(connfd, CAUTION, strlen(CAUTION), 0) < 0){
+                return -1;
+            }  
         }
-        // 格式化发送的消息内容
+
+        // format the msg to be send to clients
         sprintf(message, SERVER_MESSAGE, current_client.client_nickname.c_str(), buf);
 
-        // 遍历客户端列表依次发送消息，需要判断不要给来源客户端发
-    
-        for(auto it = this->clients.begin(); it != this->clients.end(); ++it) {
-           if(it->first != connfd){
-                if( send(it->first, message, MAXLINE, 0) < 0 ) {
-                    return -1;
-                }
-           }
-        }
+        // broadcast
+        return this->broadcast(connfd, message, len);
     }
-    return len;
-}
 
-}//namespace server_ns
+} //namespace server_ns
+}

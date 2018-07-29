@@ -100,7 +100,7 @@ void client_ns::client::start_loop(){
 
         // 输入exit可以退出聊天室
         std::cout << "You can input 'exit' to exit the chat room." << std::endl;
-        std::cout << "Create a nickname for youself:";
+        std::cout << "Chose a nickname for yourself:";
         
         // 如果客户端运行正常则不断读取输入发送给服务端
         while (isClientwork)
