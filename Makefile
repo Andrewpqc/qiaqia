@@ -1,3 +1,4 @@
+C = gcc
 CC = g++
 CFLAGS = -g -Wall -std=c++11
 all: ./client/clientmain.cpp ./server/servermain.cpp server.o client.o csapp.o
@@ -17,7 +18,7 @@ client.o: ./client/client.cpp ./client/client.h
 	$(CC) $(CFLAGS) -c ./client/client.cpp
 
 csapp.o: ./csapp/csapp.c ./csapp/csapp.h
-	gcc -g -Wall -c ./csapp/csapp.c 
+	$(C) -g -Wall -c ./csapp/csapp.c 
 
 clean:
 	rm -f *.o *.out qiaqia_server qiaqia_client 
