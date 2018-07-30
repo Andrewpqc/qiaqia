@@ -62,8 +62,22 @@ You can start `qiaqia_server` like the following command:
 ``` bash
 qiaqia_server -p <port to be listen>
 ```
-I already deployed a `qiaqia_server` on my machine at 120.77.220.239:8765, so you can quick start like the following:
+I already deployed a `qiaqia_server` on my machine at `120.77.220.239:8765`, so you can quick start like the following:
 ``` bash
-qiaqia_client -h 120.77.220.239 -p 8765
+qiaqia_client -h 120.77.220.239 -p 8765  //it' down now :<
 ```
 then,choose a pretty nickname for yourself and start. Enjory!
+
+=========================
+            +     
+            +   +
+            +      +
+            +          +
+            +             O 
+            +
+            +
+            +
+            +
+            +
+            +
+=========================
