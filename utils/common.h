@@ -6,7 +6,9 @@
 
 
 #define EPOLL_SIZE 5000
-#define CAUTION "\033[31mSYSTEM MESSAGE:\033[0mThere is only one int the char room!"
+
+// 当系统中只要一个用户的时候给出提示消息
+#define CAUTION "\033[31mSYSTEM MESSAGE:\033[0mThere is only one int the chat room!"
 
 
 // 新用户登录后的欢迎信息

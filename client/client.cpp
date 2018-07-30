@@ -1,14 +1,32 @@
 #include <iostream>
+#include <string.h>
+#include <regex>
 
 #include "client.h"
 #include "../utils/common.h"
 
 namespace client_ns{
 
+void trim(char *strIn, char *strOut){
+
+    int i, j ;
+
+    i = 0;
+
+    j = strlen(strIn) - 1;
+
+    while(strIn[i] == ' ')
+        ++i;
+
+    while(strIn[j] == ' ')
+        --j;
+    strncpy(strOut, strIn + i , j - i + 1);
+    strOut[j - i + 1] = '\0';
+}
+
 client_ns::client::client(std::string host, std::string port){
     this->server_host = host;
     this->server_port = port;
-    this->nickname ="";
     this->clientsock = 0;
     this->isClientwork = true;
     this->is_nickname_set=false;
@@ -28,9 +46,26 @@ void client_ns::client::show_help(){
     std::cout << "     > bob hello             : send 'hello' to bob if bob not block you."<<std::endl;
     std::cout << "     # bob                   : block messages from bob."<<std::endl;
     std::cout << "     # !bob                  : unblock messages from bob."<<std::endl;
-    std::cout << "     # * !bob                : only recive messages from bob"<<std::endl<<std::endl;
     std::cout << "OK,Now choose a nickname to start:";
 }
+
+void client_ns::client::handle_block_cmd(char *message){
+    char * user;
+    user=strtok(message," ");
+    // std::cout<<user<<std::endl;
+    while((user = strtok(NULL, " "))){
+        std::string username=static_cast<std::string>(user);
+        if (user[0]=='!'){
+            std::string real_username=username.substr(1);
+            if (this->blocked_user.find(real_username) != this->blocked_user.end())
+                this->blocked_user.erase(real_username); 
+        }else{
+            this->blocked_user.insert(username);
+        }
+    }
+}
+
+
 
 void client_ns::client::close_sock(){
     if (pid){
@@ -126,22 +161,24 @@ void client_ns::client::start_loop(){
                 this->is_nickname_set=true;
                 this->nickname=static_cast<std::string>(message);
             }
+            trim(message,message);            
 
             // 如果客户输出exit,退出
-            if (strncasecmp(message, "exit", strlen("exit")) == 0)
+            if (strncasecmp(message, "exit", strlen("exit")) == 0){
                 isClientwork = false;
-            else if(strncasecmp(message,"clear",strlen("clear")) == 0){
-                // std::cout<<"\033[2J\n\033[0m"<<std::endl;
+                continue;
+            }else if(strncasecmp(message,"clear",strlen("clear")) == 0){
                 system("clear");
                 continue;
             }
-            //否则将用户的输入写入管道，发送给父进程
-            else{
-                if(write(pipe_fd[1], message, strlen(message) - 1) < 0){
-                    perror("fork error");
-                    exit(-1);
-                }
+            
+        
+            //将用户的输入写入管道，发送给父进程
+            if(write(pipe_fd[1], message, strlen(message) - 1) < 0){
+                perror("fork error");
+                exit(-1);
             }
+            
         }
     }
     else
@@ -166,28 +203,40 @@ void client_ns::client::start_loop(){
                     //接受服务端消息
                     int ret = recv(this->clientsock, message, MAXLINE, 0);
                     // ret= 0 服务端关闭
-                    if (ret == 0)
-                    {
+                    if (ret == 0){
                         std::cout << "Server closed connection: " << this->clientsock << std::endl;
                         close(this->clientsock);
                         isClientwork = false;
-                    }
-                    else
-                    {
+                    }else{
+                        std::string msg=static_cast<std::string>(message);
+                        std::size_t start=msg.find_first_of('[');
+                        std::size_t end=msg.find_first_of(']');
+                        if((start==0 ||start == 15) && (end!=std::string::npos)){
+                            std::string username=msg.substr(start+1,end-1);
+                            if(this->blocked_user.find(username)==this->blocked_user.end()){
+                                std::cout << message << std::endl;
+                            }
+                        }else{
                         std::cout << message << std::endl;
-                    }
+                        }
+                    
+                }
                 }
                 //子进程写入事件发生，父进程处理并发送服务端
                 else
                 {
                     //父进程从管道中读取数据
                     int ret = read(events[i].data.fd, message, MAXLINE);
-
+                    
                     // ret = 0
                     if (ret == 0)
                         isClientwork = false;
                     else
                     {
+                        if(message[0]=='#'){
+                            this->handle_block_cmd(message);
+                            continue;
+                        }
                         // 将信息发送给服务端
                         send(this->clientsock, message, MAXLINE, 0);
                     }

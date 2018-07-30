@@ -13,10 +13,7 @@ typedef struct{
     bool is_nickname_set;
 } client_info;
 
-typedef struct{
-    std::string content;
-    std::string receiver;
-} msg;
+
 
 class server{
   private:

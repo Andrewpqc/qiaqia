@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <string>
-#include <list>
+#include <set>
 
 #include "../csapp/csapp.h"
 
@@ -24,9 +24,7 @@ class client {
         // client fd
         int clientsock;
 
-        //current blocked users'id
-        std::list<int> blocked;
-
+        
         // epoll_create创建后的返回值
         int epfd;
 
@@ -38,6 +36,11 @@ class client {
 
         char message[MAXLINE];
 
+        std::set<std::string> blocked_user;
+
+        void handle_block_cmd(char* msg);
+        
+
     public:
         client(std::string host,std::string port);
         // ~client();
@@ -45,6 +48,7 @@ class client {
         void close_sock();
         void start_loop();
         void show_help();
+        
         // void get_input_and_send_to_server();
         // void recv_msg_and_show();
 };
