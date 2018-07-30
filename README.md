@@ -67,7 +67,7 @@ I already deployed a `qiaqia_server` on my machine at `120.77.220.239:8765`, so 
 qiaqia_client -h 120.77.220.239 -p 8765  //it' down now :<
 ```
 then,choose a pretty nickname for yourself and start. Enjory!
-
+```
 =========================
             +     
             +   +
@@ -81,3 +81,4 @@ then,choose a pretty nickname for yourself and start. Enjory!
             +
             +
 =========================
+```
