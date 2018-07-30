@@ -43,10 +43,11 @@ class client {
 
     public:
         client(std::string host,std::string port);
-        // ~client();
         int init();
+        void close_sock();
         void start_loop();
         void show_help();
+        
         
 };
     

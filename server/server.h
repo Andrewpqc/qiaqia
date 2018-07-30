@@ -28,7 +28,8 @@ class server{
   public:
      std::map<int, client_info> clients;  
 
-    server(std::string port);    
+    server(std::string port); 
+    ~server();   
     int init();
     void start_loop();
     int get_msg_and_forward_to_clients(int connfd);
