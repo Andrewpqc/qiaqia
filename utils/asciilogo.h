@@ -1,4 +1,5 @@
-char *ascii_logo =
+#include <string>
+std::string ascii_logo =
 "\033[33m"
 "            _____     _       ___   _____     _       ___             　　　　　　　　　　　　　\n"     
 "           /  _  |   | |     /   | /  _  |   | |     /   |            　　　　　　　　　　　　　\n"

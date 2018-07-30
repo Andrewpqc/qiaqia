@@ -23,7 +23,7 @@ int main(int argc,char **argv){
     if (client.init()<0) return 0;
     
     // format the ascii logo
-    sprintf(logo,ascii_logo,host.c_str(),port.c_str());
+    sprintf(logo,ascii_logo.c_str(),host.c_str(),port.c_str());
 
     //connected, show logo.
     printf("%s",logo);
