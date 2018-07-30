@@ -1,4 +1,5 @@
 #include <sys/epoll.h>
+#include <cstring>
 
 //fcntl
 #include <unistd.h>
@@ -8,7 +9,7 @@
 #define EPOLL_SIZE 5000
 
 // 当系统中只要一个用户的时候给出提示消息
-#define CAUTION "\033[31mSYSTEM MESSAGE:\033[0mThere is only one int the chat room!"
+#define CAUTION "\033[31mSYSTEM MESSAGE:\033[0mOnly you in the chat room now!"
 
 
 // 新用户登录后的欢迎信息
@@ -35,4 +36,22 @@ static void addfd( int epollfd, int fd, bool enable_et )
     // 执行完就转向下一条指令，不管函数有没有返回。
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFD, 0)| O_NONBLOCK);
     // printf("fd added to epoll!\n\n");
+}
+
+
+void trim(const char *strIn, char *strOut){
+
+    int i, j ;
+
+    i = 0;
+
+    j = strlen(strIn) - 1;
+
+    while(strIn[i] == ' ')
+        ++i;
+
+    while(strIn[j] == ' ')
+        --j;
+    strncpy(strOut, strIn + i , j - i + 1);
+    strOut[j - i + 1] = '\0';
 }

@@ -7,23 +7,6 @@
 
 namespace client_ns{
 
-void trim(char *strIn, char *strOut){
-
-    int i, j ;
-
-    i = 0;
-
-    j = strlen(strIn) - 1;
-
-    while(strIn[i] == ' ')
-        ++i;
-
-    while(strIn[j] == ' ')
-        --j;
-    strncpy(strOut, strIn + i , j - i + 1);
-    strOut[j - i + 1] = '\0';
-}
-
 client_ns::client::client(std::string host, std::string port){
     this->server_host = host;
     this->server_port = port;
@@ -34,19 +17,21 @@ client_ns::client::client(std::string host, std::string port){
 
 void client_ns::client::show_help(){
     std::cout << "Usage:" << std::endl;
-    std::cout << "     exit                    : disconnect to the server and quit." << std::endl;
     std::cout << "     <message>               : send message to all online users that not block you." << std::endl;
-    std::cout << "     $ <cmd>                 : send a command to qiaqia server for status query." << std::endl;
+    std::cout << "     $ <commands>            : send a command to the qiaqia for state query." << std::endl;
     std::cout << "     > <username> <message>  : send a message to a single user that not block you." << std::endl;
     std::cout << "     # <username>            : block user"<<std::endl<<std::endl;
     std::cout << "Example:"<<std::endl;
+    std::cout << "     exit                    : disconnect to the server and leave."<<std::endl;
     std::cout << "     clear                   : clear the screen, just like the clear in bash."<<std::endl;
-    std::cout << "     hello                   : send 'hello' to all online users that not block you."<<std::endl;
+    std::cout << "     hello, guys!            : send 'hello, guys!' to all online users that not block you."<<std::endl;
     std::cout << "     $ show users            : show informations of all currently online users"<<std::endl;
-    std::cout << "     > bob hello             : send 'hello' to bob if bob not block you."<<std::endl;
-    std::cout << "     # bob                   : block messages from bob."<<std::endl;
-    std::cout << "     # !bob                  : unblock messages from bob."<<std::endl;
-    std::cout << "OK,Now choose a nickname to start:";
+    std::cout << "     $ show blocked          : show the users that you blocked"<<std::endl;
+    std::cout << "     > Bob how are you?      : send 'how are you?' only to Bob if bob not block you."<<std::endl;
+    std::cout << "     # Bob                   : block messages from Bob."<<std::endl;
+    std::cout << "     # !Bob                  : unblock messages from Bob."<<std::endl;
+    std::cout << "     # Mike !Amy ...         : block Mick and unblock Amy."<<std::endl<<std::endl;  
+    std::cout << "\033[33mNow choose a nickname to start:\033[0m";
 }
 
 void client_ns::client::handle_block_cmd(char *message){
@@ -235,6 +220,17 @@ void client_ns::client::start_loop(){
                     {
                         if(message[0]=='#'){
                             this->handle_block_cmd(message);
+                            continue;
+                        }else if(strncasecmp(message, "$ show blocked", strlen("$ show blocked")) == 0){
+                            if(this->blocked_user.size()==0){
+                                std::cout<<"\033[32myou not block any people now!\033[0m"<<std::endl;
+                            }else{
+                                std::cout<<"\033[32myou blocked the following people:"<<std::endl;
+                                for(auto it=this->blocked_user.begin();it!=this->blocked_user.end();it++){
+                                    std::cout<<*it<<std::endl;
+                                }
+                                std::cout<<"\033[0m";
+                            }
                             continue;
                         }
                         // 将信息发送给服务端

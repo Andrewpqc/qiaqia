@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <list>
+#include <ctime>
 
 #include "server.h"
 #include "../utils/common.h"
@@ -31,6 +32,26 @@ int server_ns::server::broadcast(int sender_fd, char *msg, int recv_len){
     }
     return recv_len;
 }
+
+int server_ns::server::show_userinfo_to_client(int connfd,int len){
+    char message[MAXLINE];
+    sprintf(message,"\033[32mHere are %lu users online now!",this->clients.size());
+    sprintf(message,"%s\nHOST        PORT    JOIN_TIME                  USERNAME",message);
+    for(auto it=this->clients.begin();it!=this->clients.end();it++){
+        it->second.client_nickname;
+        sprintf(message,"%s\n%s   %s   %s   %s",message,
+                    it->second.client_host.c_str(),
+                    it->second.client_port.c_str(),
+                    it->second.join_time,
+                    it->second.client_nickname.c_str());
+    }
+    sprintf(message,"%s\033[0m",message);
+    if (send(connfd, message, strlen(message), 0) < 0){
+        return -1;
+    }  
+    return len;
+}
+
 
 int server_ns::server::init(){
     struct addrinfo hints, *listp, *p;
@@ -129,6 +150,9 @@ void server_ns::server::start_loop(){
                 client.client_host = static_cast<std::string>(hostname);
                 client.client_port = static_cast<std::string>(port);
                 client.connfd = connfd;
+                time_t now = time(0);
+                client.join_time=ctime(&now);
+                client.join_time[strlen(client.join_time)-1]='\0';
                 client.is_nickname_set = false;
                 this->clients.insert(std::pair<int, client_info>(connfd, client));
 
@@ -212,9 +236,37 @@ int server_ns::server::get_msg_and_forward_to_clients(int connfd){
             }  
         }
 
+        
+        if (strncasecmp(buf, "$ show users", strlen("$ show users")) == 0){
+            return this->show_userinfo_to_client(connfd,len);
+        }else if(buf[0]=='>'){
+            std::string command=static_cast<std::string>(buf);
+            std::size_t pos1=command.find_first_of(' ');
+            std::size_t pos2=command.find_last_of(' ');
+
+            //提取出name,msg
+            std::string name=command.substr(pos1+1,pos2-1);
+            std::string msg=command.substr(pos2+1);
+
+            //去掉可能的空格
+            char name_c[name.size()],msg_c[msg.size()];
+            trim(name.c_str(),name_c);
+            trim(msg.c_str(),msg_c);
+
+            //转发给要求的人
+            for(auto it=this->clients.begin();it!=this->clients.end();it++){
+                if(it->second.client_nickname==(static_cast<std::string>(name_c))){
+                    if (send(it->first, msg_c, strlen(msg_c), 0) < 0){
+                         return -1;
+                    }  
+                }
+            }
+            return len;
+        }
+
         // format the msg to be send to clients
         sprintf(message, SERVER_MESSAGE, current_client.client_nickname.c_str(), buf);
-
+        
         // broadcast
         return this->broadcast(connfd, message, len);
     }

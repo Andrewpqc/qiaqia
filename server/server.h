@@ -9,6 +9,7 @@ typedef struct{
     std::string client_host;
     std::string client_port;
     std::string client_nickname;
+    char *join_time;
     int connfd;
     bool is_nickname_set;
 } client_info;
@@ -23,7 +24,8 @@ class server{
 
     void remove_client(int connfd);
     int broadcast(int sender_fd,char* msg,int recv_len);
-
+    int show_userinfo_to_client(int connfd,int len);
+    int forward_to_single_person();
   public:
      std::map<int, client_info> clients;  
 
