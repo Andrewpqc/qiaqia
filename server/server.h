@@ -25,13 +25,10 @@ class server{
     void remove_client(int connfd);
     int broadcast(int sender_fd,char* msg,int recv_len);
     int show_userinfo_to_client(int connfd,int len);
-    int forward_to_single_person();
   public:
      std::map<int, client_info> clients;  
 
-    server(std::string port);
-    ~server();
-    
+    server(std::string port);    
     int init();
     void start_loop();
     int get_msg_and_forward_to_clients(int connfd);

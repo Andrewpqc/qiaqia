@@ -45,12 +45,9 @@ class client {
         client(std::string host,std::string port);
         // ~client();
         int init();
-        void close_sock();
         void start_loop();
         void show_help();
         
-        // void get_input_and_send_to_server();
-        // void recv_msg_and_show();
 };
     
 }
