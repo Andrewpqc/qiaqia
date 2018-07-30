@@ -21,3 +21,6 @@ csapp.o: ./csapp/csapp.c ./csapp/csapp.h
 
 clean:
 	rm -f *.o *.out qiaqia_server qiaqia_client 
+
+install:
+	sudo mv qiaqia_client qiaqia_server /usr/local/bin/
