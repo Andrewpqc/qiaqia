@@ -9,7 +9,7 @@ A command line chat application.
 |_______| |_| /_/   |_| |_______| |_| /_/   |_|
 ```
 ## screenshot
-![](http://static.muxixyz.com/render1533018635013.gif)
+[click here to see the screenshot.](http://static.muxixyz.com/render1533018635013.gif)
 ## features
 + event based IO multiplexing concurrency model for qiaqia server(epoll).
 + support group chat and private chat.
