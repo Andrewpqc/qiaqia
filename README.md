@@ -8,6 +8,8 @@ A command line chat application.
 | |_| |_  | |  / /  | | | |_| |_  | |  / /  | |
 |_______| |_| /_/   |_| |_______| |_| /_/   |_|
 ```
+## screenshot
+![](http://static.muxixyz.com/render1533018635013.gif)
 ## features
 + event based IO multiplexing concurrency model for qiaqia server(epoll).
 + support group chat and private chat.
@@ -49,20 +51,20 @@ git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia && make client &&
 ``` bash
 git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia && make && sudo make install
 ```
-Once you have finished one of the commands, the corresponding executable binary file will be placed under the `/usr/local/bin/` directory of your machine. If you want to uninstall Qiaqia,just to type: 
+Once you have finished one of the commands, the corresponding executable binary file will be placed under the `/usr/local/bin/` directory of your machine. If you want to uninstall Qiaqia,just to input: 
 ``` bash
 sudo rm /usr/local/bin/qiaqia*
 ```
 in you terminal.
 
-
+## start
 Before you start `qiaqia_client`, you must make sure that `qiaqia_server` is already started on your local machine or anywhere network can reach.
 
 You can start `qiaqia_server` like the following command:
 ``` bash
 qiaqia_server -p <port to be listen>
 ```
-I already deployed a `qiaqia_server` on my machine at `120.77.220.239:8765`, so you can quick start like the following:
+I already deployed a `qiaqia_server` on my machine at `120.77.220.239:8765`, so you can a quick start like the following:
 ``` bash
 qiaqia_client -h 120.77.220.239 -p 8765  //it' down now :<
 ```

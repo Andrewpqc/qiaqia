@@ -47,8 +47,6 @@ class client {
         void close_sock();
         void start_loop();
         void show_help();
-        
-        
 };
     
 }

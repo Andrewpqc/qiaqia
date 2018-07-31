@@ -123,7 +123,7 @@ void server_ns::server::start_loop(){
 
     while (true){
         // the ready events
-        int epoll_events_count = epoll_wait(this->epfd, events, EPOLL_SIZE, -1);
+        int epoll_events_count = epoll_wait(this->epfd, events, EPOLL_SIZE, -1);//timeout=-1,此处会一直阻塞，直到有事件发生
 
         if (epoll_events_count < 0){
             perror("epoll failure");
