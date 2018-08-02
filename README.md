@@ -1,5 +1,5 @@
 # [qiaqia](https://github.com/Andrewpqc/qiaqia)
-A command line chat application.
+A command line chat application for geeks.
 ```
  _____     _       ___   _____     _       ___             　　　　　　　　　　　　
 /  _  |   | |     /   | /  _  |   | |     /   |            
