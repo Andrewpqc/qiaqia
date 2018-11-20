@@ -12,7 +12,7 @@
 namespace server_ns {
 
     server_ns::server::server(std::string port) {
-        this->listen_port = port;
+        this->listen_port = move(port);
         this->epfd = 0;
         this->listenfd = 0;
     }
@@ -23,9 +23,9 @@ namespace server_ns {
     }
 
     int server_ns::server::broadcast(int sender_fd, char *msg, int recv_len) {
-        for (auto it = this->clients.begin(); it != this->clients.end(); ++it) {
-            if (it->first != sender_fd) {
-                if (send(it->first, msg, MAXLINE, 0) < 0) {
+        for (auto it: this->clients) {
+            if (it.first != sender_fd) {
+                if (send(it.first, msg, MAXLINE, 0) < 0) {
                     return -1;
                 }
             }
@@ -38,7 +38,7 @@ namespace server_ns {
         sprintf(message, "\033[32mHere are %lu users online now!", this->clients.size());
         sprintf(message, "%s\nHOST        PORT    JOIN_TIME                  USERNAME", message);
         for (auto it = this->clients.begin(); it != this->clients.end(); it++) {
-            it->second.client_nickname;
+
             sprintf(message, "%s\n%s   %s   %s   %s", message,
                     it->second.client_host.c_str(),
                     it->second.client_port.c_str(),

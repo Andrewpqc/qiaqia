@@ -1,10 +1,8 @@
 #include <sys/epoll.h>
 #include <cstring>
-
-//fcntl
 #include <unistd.h>
 #include <fcntl.h>
-
+#include "error_functions.h"
 
 #define EPOLL_SIZE 5000
 
@@ -22,36 +20,42 @@
 #define SERVER_MESSAGE "[%s] say >> %s"
 
 
-// 注册新的fd到epollfd中
-// 参数enable_et表示是否启用ET模式，如果为True则启用，否则使用LT模式
-static void addfd( int epollfd, int fd, bool enable_et )
-{
+static void addfd(int epollfd, int fd, bool enable_et) {
     struct epoll_event ev;
     ev.data.fd = fd;
+
+    /* LT is default */
     ev.events = EPOLLIN;
-    if( enable_et )
+    /* if enable_et set to  true, then ET is used here*/
+    if (enable_et)
         ev.events = EPOLLIN | EPOLLET;
-    epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev);
-    // 设置socket为nonblocking模式
-    // 执行完就转向下一条指令，不管函数有没有返回。
-    fcntl(fd, F_SETFL, fcntl(fd, F_GETFD, 0)| O_NONBLOCK);
-    // printf("fd added to epoll!\n\n");
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev) == -1)
+        errExit("error epoll_ctl");
 }
 
 
-void trim(const char *strIn, char *strOut){
+static void set_nonblock(int fd) {
+    int flags = fcntl(fd, F_GETFL);
+    if (flags == -1)
+        errExit("error fcntl F_GETFL");
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+        errExit("error fcntl F_SETFL");
+}
 
-    int i, j ;
+
+void trim(const char *strIn, char *strOut) {
+
+    size_t i, j;
 
     i = 0;
 
     j = strlen(strIn) - 1;
 
-    while(strIn[i] == ' ')
+    while (strIn[i] == ' ')
         ++i;
 
-    while(strIn[j] == ' ')
+    while (strIn[j] == ' ')
         --j;
-    strncpy(strOut, strIn + i , j - i + 1);
+    strncpy(strOut, strIn + i, j - i + 1);
     strOut[j - i + 1] = '\0';
 }

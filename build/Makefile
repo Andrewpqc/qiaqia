@@ -111,45 +111,6 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named server
-
-# Build rule for target.
-server: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 server
-.PHONY : server
-
-# fast build rule for target.
-server/fast:
-	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/build
-.PHONY : server/fast
-
-#=============================================================================
-# Target rules for targets named csapp
-
-# Build rule for target.
-csapp: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 csapp
-.PHONY : csapp
-
-# fast build rule for target.
-csapp/fast:
-	$(MAKE) -f CMakeFiles/csapp.dir/build.make CMakeFiles/csapp.dir/build
-.PHONY : csapp/fast
-
-#=============================================================================
-# Target rules for targets named client
-
-# Build rule for target.
-client: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 client
-.PHONY : client
-
-# fast build rule for target.
-client/fast:
-	$(MAKE) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/build
-.PHONY : client/fast
-
-#=============================================================================
 # Target rules for targets named qiaqia_server
 
 # Build rule for target.
@@ -181,7 +142,6 @@ client/client.o: client/client.cpp.o
 
 # target to build an object file
 client/client.cpp.o:
-	$(MAKE) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/client.cpp.o
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/client/client.cpp.o
 .PHONY : client/client.cpp.o
 
@@ -191,7 +151,6 @@ client/client.i: client/client.cpp.i
 
 # target to preprocess a source file
 client/client.cpp.i:
-	$(MAKE) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/client.cpp.i
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/client/client.cpp.i
 .PHONY : client/client.cpp.i
 
@@ -201,7 +160,6 @@ client/client.s: client/client.cpp.s
 
 # target to generate assembly for a file
 client/client.cpp.s:
-	$(MAKE) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/client.cpp.s
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/client/client.cpp.s
 .PHONY : client/client.cpp.s
 
@@ -238,7 +196,6 @@ csapp/csapp.o: csapp/csapp.c.o
 
 # target to build an object file
 csapp/csapp.c.o:
-	$(MAKE) -f CMakeFiles/csapp.dir/build.make CMakeFiles/csapp.dir/csapp/csapp.c.o
 	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.o
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.o
 .PHONY : csapp/csapp.c.o
@@ -249,7 +206,6 @@ csapp/csapp.i: csapp/csapp.c.i
 
 # target to preprocess a source file
 csapp/csapp.c.i:
-	$(MAKE) -f CMakeFiles/csapp.dir/build.make CMakeFiles/csapp.dir/csapp/csapp.c.i
 	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.i
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.i
 .PHONY : csapp/csapp.c.i
@@ -260,7 +216,6 @@ csapp/csapp.s: csapp/csapp.c.s
 
 # target to generate assembly for a file
 csapp/csapp.c.s:
-	$(MAKE) -f CMakeFiles/csapp.dir/build.make CMakeFiles/csapp.dir/csapp/csapp.c.s
 	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.s
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.s
 .PHONY : csapp/csapp.c.s
@@ -271,7 +226,6 @@ server/server.o: server/server.cpp.o
 
 # target to build an object file
 server/server.cpp.o:
-	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/server.cpp.o
 	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/server/server.cpp.o
 .PHONY : server/server.cpp.o
 
@@ -281,7 +235,6 @@ server/server.i: server/server.cpp.i
 
 # target to preprocess a source file
 server/server.cpp.i:
-	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/server.cpp.i
 	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/server/server.cpp.i
 .PHONY : server/server.cpp.i
 
@@ -291,7 +244,6 @@ server/server.s: server/server.cpp.s
 
 # target to generate assembly for a file
 server/server.cpp.s:
-	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/server.cpp.s
 	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/server/server.cpp.s
 .PHONY : server/server.cpp.s
 
@@ -329,12 +281,9 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
-	@echo "... server"
-	@echo "... csapp"
-	@echo "... client"
+	@echo "... edit_cache"
 	@echo "... qiaqia_server"
 	@echo "... qiaqia_client"
-	@echo "... edit_cache"
 	@echo "... client/client.o"
 	@echo "... client/client.i"
 	@echo "... client/client.s"
