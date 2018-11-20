@@ -10,21 +10,21 @@
 namespace client_ns {
 
 
-class client {
+    class client {
     private:
         std::string nickname;
         std::string server_host;
         std::string server_port;
 
         bool is_nickname_set;
-        
+
         //current process id
         int pid;
 
         // client fd
         int clientsock;
 
-        
+
         // epoll_create创建后的返回值
         int epfd;
 
@@ -36,19 +36,23 @@ class client {
 
         char message[MAXLINE];
 
-        std::set<std::string> blocked_user;
+        std::set <std::string> blocked_user;
 
-        void handle_block_cmd(char* msg);
-        
+        void handle_block_cmd(char *msg);
+
 
     public:
-        client(std::string host,std::string port);
+        client(std::string host, std::string port);
+
         int init();
+
         void close_sock();
+
         void start_loop();
+
         void show_help();
-};
-    
+    };
+
 }
 
 #endif
