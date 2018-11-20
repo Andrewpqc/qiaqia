@@ -191,19 +191,15 @@ namespace server_ns {
         std::cout << "read from client(clientID = " << connfd << ")" << std::endl;
         int len = recv(connfd, buf, MAXLINE, 0);
 
-        // get the current user info
-        server_ns::client_info &current_client = this->clients[connfd];
 
         // set the current user's nickname,this will be
         // run for the first msg for every client
-        if (!current_client.is_nickname_set) {
-            //set the 'is_nickname_set' flag to true
-            // and set the client_nickname
-            current_client.is_nickname_set = true;
-            current_client.client_nickname = static_cast<std::string>(buf);
+        if (!this->clients[connfd].is_nickname_set) {
+            this->clients[connfd].client_nickname = static_cast<std::string>(buf);
+            this->clients[connfd].is_nickname_set = true;
 
             //broadcast the welcome message to all other users
-            sprintf(message, SERVER_WELCOME, current_client.client_nickname.c_str());
+            sprintf(message, SERVER_WELCOME, this->clients[connfd].client_nickname.c_str());
             return this->broadcast(connfd, message, len);
 
         }
@@ -224,7 +220,7 @@ namespace server_ns {
                       << std::endl;
 
             // broadcast the leave info
-            sprintf(message, LEAVE_INFO, current_client.client_nickname.c_str());
+            sprintf(message, LEAVE_INFO, this->clients[connfd].client_nickname.c_str());
             return this->broadcast(connfd, message, len);
         } else {
             // if there only one user in the chat room,
@@ -264,7 +260,7 @@ namespace server_ns {
             }
 
             // format the msg to be send to clients
-            sprintf(message, SERVER_MESSAGE, current_client.client_nickname.c_str(), buf);
+            sprintf(message, SERVER_MESSAGE, this->clients[connfd].client_nickname.c_str(), buf);
 
             // broadcast
             return this->broadcast(connfd, message, len);

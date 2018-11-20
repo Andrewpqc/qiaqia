@@ -1,0 +1,20 @@
+#设置项目名称
+PROJECT(system)
+
+#要求CMake的最低版本为2.8
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+#添加头文件搜索路径
+INCLUDE_DIRECTORIES(/usr/local/include)
+
+#添加库文件搜索路径
+LINK_DIRECTORIES(/usr/local/lib /usr/lib)
+
+ADD_LIBRARY(csapp csapp/csapp.c csapp/csapp.h)
+ADD_LIBRARY(server server/server.cpp)
+ADD_LIBRARY(client client/client.cpp)
+
+ADD_EXECUTABLE(qiaqia_server server/servermain.cpp server/server.h server/server.cpp csapp/csapp.h csapp/csapp.c)
+ADD_EXECUTABLE(qiaqia_client client/clientmain.cpp client/client.h client/client.cpp csapp/csapp.h csapp/csapp.c)
+TARGET_LINK_LIBRARIES(qiaqia_server pthread)
+TARGET_LINK_LIBRARIES(qiaqia_client pthread)
