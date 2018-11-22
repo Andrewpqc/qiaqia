@@ -8,27 +8,43 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* Listing 3-3 */
+/* Listing 3-2 */
 
-/* error_functions.c
+/* error_functions.h
 
-   Some standard error handling routines used by various programs.
+   Header file for error_functions.c.
 */
+
+#ifndef ERROR_FUNCTIONS_HPP
+#define ERROR_FUNCTIONS_HPP
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-#include "error_functions.h"
 #include "ename.c.inc"          /* Defines ename and MAX_ENAME */
+
+#ifdef TRUE
+#undef TRUE
+#endif
+
+#ifdef FALSE
+#undef FALSE
+#endif
 
 #ifdef __GNUC__                 /* Prevent 'gcc -Wall' complaining  */
 __attribute__ ((__noreturn__))  /* if we call this function as last */
 #endif                          /* statement in a non-void function */
+
+typedef enum {
+    FALSE = 0, TRUE = 1
+} Boolean;
+
+
 static void
-terminate(Boolean useExit3)
-{
+terminate(Boolean useExit3) {
     char *s;
 
     /* Dump core if EF_DUMPCORE environment variable is defined and
@@ -45,6 +61,35 @@ terminate(Boolean useExit3)
         _exit(EXIT_FAILURE);
 }
 
+
+/* Error diagnostic routines */
+
+void errMsg(const char *format, ...);
+
+#ifdef __GNUC__
+
+/* This macro stops 'gcc -Wall' complaining that "control reaches
+   end of non-void function" if we use the following functions to
+   terminate main() or some other non-void function. */
+
+#define NORETURN __attribute__ ((__noreturn__))
+#else
+#define NORETURN
+#endif
+
+void errExit(const char *format, ...) NORETURN;
+
+void err_exit(const char *format, ...) NORETURN;
+
+void errExitEN(int errnum, const char *format, ...) NORETURN;
+
+void fatal(const char *format, ...) NORETURN;
+
+void usageErr(const char *format, ...) NORETURN;
+
+void cmdLineErr(const char *format, ...) NORETURN;
+
+
 /* Diagnose 'errno' error by:
 
       * outputting a string containing the error name (if available
@@ -56,8 +101,7 @@ terminate(Boolean useExit3)
 
 static void
 outputError(Boolean useErr, int err, Boolean flushStdout,
-        const char *format, va_list ap)
-{
+            const char *format, va_list ap) {
 #define BUF_SIZE 500
     char buf[BUF_SIZE], userMsg[BUF_SIZE], errText[BUF_SIZE];
 
@@ -65,8 +109,8 @@ outputError(Boolean useErr, int err, Boolean flushStdout,
 
     if (useErr)
         snprintf(errText, BUF_SIZE, " [%s %s]",
-                (err > 0 && err <= MAX_ENAME) ?
-                ename[err] : "?UNKNOWN?", strerror(err));
+                 (err > 0 && err <= MAX_ENAME) ?
+                 ename[err] : "?UNKNOWN?", strerror(err));
     else
         snprintf(errText, BUF_SIZE, ":");
 
@@ -82,8 +126,7 @@ outputError(Boolean useErr, int err, Boolean flushStdout,
    return to caller */
 
 void
-errMsg(const char *format, ...)
-{
+errMsg(const char *format, ...) {
     va_list argList;
     int savedErrno;
 
@@ -100,8 +143,7 @@ errMsg(const char *format, ...)
    terminate the process */
 
 void
-errExit(const char *format, ...)
-{
+errExit(const char *format, ...) {
     va_list argList;
 
     va_start(argList, format);
@@ -127,8 +169,7 @@ errExit(const char *format, ...)
    invoking exit handlers that were established by the caller. */
 
 void
-err_exit(const char *format, ...)
-{
+err_exit(const char *format, ...) {
     va_list argList;
 
     va_start(argList, format);
@@ -142,8 +183,7 @@ err_exit(const char *format, ...)
    the error number in 'errnum' */
 
 void
-errExitEN(int errnum, const char *format, ...)
-{
+errExitEN(int errnum, const char *format, ...) {
     va_list argList;
 
     va_start(argList, format);
@@ -156,8 +196,7 @@ errExitEN(int errnum, const char *format, ...)
 /* Print an error message (without an 'errno' diagnostic) */
 
 void
-fatal(const char *format, ...)
-{
+fatal(const char *format, ...) {
     va_list argList;
 
     va_start(argList, format);
@@ -170,8 +209,7 @@ fatal(const char *format, ...)
 /* Print a command usage error message and terminate the process */
 
 void
-usageErr(const char *format, ...)
-{
+usageErr(const char *format, ...) {
     va_list argList;
 
     fflush(stdout);           /* Flush any pending stdout */
@@ -189,8 +227,7 @@ usageErr(const char *format, ...)
    terminate the process */
 
 void
-cmdLineErr(const char *format, ...)
-{
+cmdLineErr(const char *format, ...) {
     va_list argList;
 
     fflush(stdout);           /* Flush any pending stdout */
@@ -203,3 +240,6 @@ cmdLineErr(const char *format, ...)
     fflush(stderr);           /* In case stderr is not line-buffered */
     exit(EXIT_FAILURE);
 }
+
+
+#endif

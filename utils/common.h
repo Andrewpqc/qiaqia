@@ -2,7 +2,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
-#include "error_functions.h"
+#include "error_functions.hpp"
 
 #define EPOLL_SIZE 5000
 

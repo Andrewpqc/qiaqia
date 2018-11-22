@@ -18,7 +18,7 @@
 #include <sys/socket.h> // socket getaddrinfo/getnameinfo
 #include <netdb.h> //gai_strerror NI_MAXHOST NI_MAXSERV
 
-#include "../utils/error_functions.h"
+#include "../utils/error_functions.hpp"
 
 /* 监听缓冲队列大小 */
 #define LISTENQ 50
@@ -216,6 +216,7 @@ namespace server_ns {
             this->listenFd = listen_fd;
 
             //give a output here
+            printf("server listening on localhost : %s\n",this->serverPort.c_str());
         }
 
         int get_msg_and_forward_to_clients(int connfd) {
