@@ -210,7 +210,6 @@ csapp/csapp.o: csapp/csapp.c.o
 # target to build an object file
 csapp/csapp.c.o:
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.o
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.o
 .PHONY : csapp/csapp.c.o
 
 csapp/csapp.i: csapp/csapp.c.i
@@ -220,7 +219,6 @@ csapp/csapp.i: csapp/csapp.c.i
 # target to preprocess a source file
 csapp/csapp.c.i:
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.i
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.i
 .PHONY : csapp/csapp.c.i
 
 csapp/csapp.s: csapp/csapp.c.s
@@ -230,35 +228,7 @@ csapp/csapp.s: csapp/csapp.c.s
 # target to generate assembly for a file
 csapp/csapp.c.s:
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.s
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.s
 .PHONY : csapp/csapp.c.s
-
-server/server.o: server/server.cpp.o
-
-.PHONY : server/server.o
-
-# target to build an object file
-server/server.cpp.o:
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/server/server.cpp.o
-.PHONY : server/server.cpp.o
-
-server/server.i: server/server.cpp.i
-
-.PHONY : server/server.i
-
-# target to preprocess a source file
-server/server.cpp.i:
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/server/server.cpp.i
-.PHONY : server/server.cpp.i
-
-server/server.s: server/server.cpp.s
-
-.PHONY : server/server.s
-
-# target to generate assembly for a file
-server/server.cpp.s:
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/server/server.cpp.s
-.PHONY : server/server.cpp.s
 
 server/servermain.o: server/servermain.cpp.o
 
@@ -334,9 +304,6 @@ help:
 	@echo "... csapp/csapp.o"
 	@echo "... csapp/csapp.i"
 	@echo "... csapp/csapp.s"
-	@echo "... server/server.o"
-	@echo "... server/server.i"
-	@echo "... server/server.s"
 	@echo "... server/servermain.o"
 	@echo "... server/servermain.i"
 	@echo "... server/servermain.s"
