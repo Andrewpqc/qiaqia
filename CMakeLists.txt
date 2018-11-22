@@ -21,4 +21,4 @@ ADD_EXECUTABLE(qiaqia_client client/clientmain.cpp client/client.h
             client/client.cpp)
 
 TARGET_LINK_LIBRARIES(qiaqia_server errorFunc)
-TARGET_LINK_LIBRARIES(qiaqia_client pthread errorFunc)
+TARGET_LINK_LIBRARIES(qiaqia_client errorFunc)
