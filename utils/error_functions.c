@@ -15,6 +15,11 @@
    Some standard error handling routines used by various programs.
 */
 #include <stdarg.h>
+#include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 #include "error_functions.h"
 #include "ename.c.inc"          /* Defines ename and MAX_ENAME */
 

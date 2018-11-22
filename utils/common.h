@@ -20,27 +20,27 @@
 #define SERVER_MESSAGE "[%s] say >> %s"
 
 
-static void addfd(int epollfd, int fd, bool enable_et) {
-    struct epoll_event ev;
-    ev.data.fd = fd;
-
-    /* LT is default */
-    ev.events = EPOLLIN;
-    /* if enable_et set to  true, then ET is used here*/
-    if (enable_et)
-        ev.events = EPOLLIN | EPOLLET;
-    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev) == -1)
-        errExit("error epoll_ctl");
-}
-
-
-static void set_nonblock(int fd) {
-    int flags = fcntl(fd, F_GETFL);
-    if (flags == -1)
-        errExit("error fcntl F_GETFL");
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-        errExit("error fcntl F_SETFL");
-}
+//static void addfd(int epollfd, int fd, bool enable_et) {
+//    struct epoll_event ev;
+//    ev.data.fd = fd;
+//
+//    /* LT is default */
+//    ev.events = EPOLLIN;
+//    /* if enable_et set to  true, then ET is used here*/
+//    if (enable_et)
+//        ev.events = EPOLLIN | EPOLLET;
+//    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev) == -1)
+//        errExit("error epoll_ctl");
+//}
+//
+//
+//inline static void set_nonblocking(int fd) {
+//    int flags = fcntl(fd, F_GETFL);
+//    if (flags == -1)
+//        errExit("error fcntl F_GETFL");
+//    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+//        errExit("error fcntl F_SETFL");
+//}
 
 
 void trim(const char *strIn, char *strOut) {

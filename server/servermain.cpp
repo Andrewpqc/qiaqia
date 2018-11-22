@@ -3,7 +3,7 @@
 #include <string>
 #include <cstring>
 
-#include "server.h"
+#include "server.hpp"
 #include "../utils/cmdline.h"
 
 int main(int argc, char **argv) {
@@ -16,16 +16,9 @@ int main(int argc, char **argv) {
     std::string port = cmd.get<std::string>("port");
 
     //this server instance
-    server_ns::server server(port);
+    server_ns::Server server(port);
 
-    //make the server to listen.    
-    if (server.init() < 0) {
-        return 0;
-    } else {
-        std::cout << "Server listened on localhost:" << port << std::endl;
-    }
-
-    //loop to accept connection and process
-    server.start_loop();
+    //start the event loop
+    server.start();
 
 }

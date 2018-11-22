@@ -5,8 +5,9 @@
 #include <list>
 #include <ctime>
 
-#include "server.h"
+#include "server.hpp"
 #include "../utils/common.h"
+#include "../utils/error_functions.h"
 #include "../csapp/csapp.h"
 
 namespace server_ns {
@@ -20,6 +21,27 @@ namespace server_ns {
     server_ns::server::~server() {
         close(this->listenfd);
         close(this->epfd);
+    }
+
+    void  server_ns::server::set_nonblocking(int fd) {
+        int flags = fcntl(fd, F_GETFL);
+        if (flags == -1)
+            errExit("error fcntl F_GETFL");
+        if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+            errExit("error fcntl F_SETFL");
+    }
+
+    void server_ns::server::addfd(int epollfd, int fd, bool enable_et) {
+        struct epoll_event ev;
+        ev.data.fd = fd;
+
+        /* LT is default */
+        ev.events = EPOLLIN;
+        /* if enable_et set to  true, then ET is used here*/
+        if (enable_et)
+            ev.events = EPOLLIN | EPOLLET;
+        if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev) == -1)
+            errExit("error epoll_ctl");
     }
 
     int server_ns::server::broadcast(int sender_fd, char *msg, int recv_len) {
@@ -52,8 +74,7 @@ namespace server_ns {
         return len;
     }
 
-
-    int server_ns::server::init() {
+    int server_ns::server::get_listen_fd(std::string port) {
         struct addrinfo hints, *listp, *p;
         int listenfd, rc, optval = 1;
 
@@ -63,9 +84,9 @@ namespace server_ns {
         hints.ai_socktype = SOCK_STREAM;             /* Accept connections */
         hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; /* ... on any IP address */
         hints.ai_flags |= AI_NUMERICSERV;            /* ... using port number */
-        if ((rc = getaddrinfo(NULL, this->listen_port.c_str(), &hints, &listp)) != 0) {
+        if ((rc = getaddrinfo(nullptr, port.c_str(), &hints, &listp)) != 0) {
             fprintf(stderr, "getaddrinfo failed (port %s): %s\n",
-                    this->listen_port.c_str(), gai_strerror(rc));
+                    port.c_str(), gai_strerror(rc));
             return -2;
         }
 
@@ -99,20 +120,29 @@ namespace server_ns {
             return -1;
         }
 
-        //在内核中创建事件表
-        epfd = epoll_create(EPOLL_SIZE);
-
-        if (epfd < 0) {
-            perror("epfd error");
-            exit(-1);
-        }
-
-        //往事件表里添加监听事件
-        addfd(epfd, listenfd, true);
-
-        this->listenfd = listenfd;
-
         return listenfd;
+    }
+
+    int server_ns::server::init() {
+
+        //获取监听listen_port的STREAM socket
+        int listen_fd;
+        if ((listen_fd = get_listen_fd(this->listen_port)) < 0)
+            errExit("get_listen_fd");
+
+        //对监听描述符设置非阻塞
+        set_nonblocking(listen_fd);
+
+        //在内核中创建事件表
+        if ((epfd = epoll_create(EPOLL_SIZE)) < 0)
+            errExit("epoll_create");
+
+        //往事件表里添加监听事件，边缘触发
+        addfd(epfd, listen_fd, true);
+
+        this->listenfd = listen_fd;
+
+        return listen_fd;
     }
 
     void server_ns::server::start_loop() {

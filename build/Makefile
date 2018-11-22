@@ -111,19 +111,6 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named qiaqia_server
-
-# Build rule for target.
-qiaqia_server: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 qiaqia_server
-.PHONY : qiaqia_server
-
-# fast build rule for target.
-qiaqia_server/fast:
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/build
-.PHONY : qiaqia_server/fast
-
-#=============================================================================
 # Target rules for targets named qiaqia_client
 
 # Build rule for target.
@@ -135,6 +122,32 @@ qiaqia_client: cmake_check_build_system
 qiaqia_client/fast:
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/build
 .PHONY : qiaqia_client/fast
+
+#=============================================================================
+# Target rules for targets named errorFunc
+
+# Build rule for target.
+errorFunc: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 errorFunc
+.PHONY : errorFunc
+
+# fast build rule for target.
+errorFunc/fast:
+	$(MAKE) -f CMakeFiles/errorFunc.dir/build.make CMakeFiles/errorFunc.dir/build
+.PHONY : errorFunc/fast
+
+#=============================================================================
+# Target rules for targets named qiaqia_server
+
+# Build rule for target.
+qiaqia_server: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 qiaqia_server
+.PHONY : qiaqia_server
+
+# fast build rule for target.
+qiaqia_server/fast:
+	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/build
+.PHONY : qiaqia_server/fast
 
 client/client.o: client/client.cpp.o
 
@@ -196,8 +209,8 @@ csapp/csapp.o: csapp/csapp.c.o
 
 # target to build an object file
 csapp/csapp.c.o:
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.o
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.o
+	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.o
 .PHONY : csapp/csapp.c.o
 
 csapp/csapp.i: csapp/csapp.c.i
@@ -206,8 +219,8 @@ csapp/csapp.i: csapp/csapp.c.i
 
 # target to preprocess a source file
 csapp/csapp.c.i:
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.i
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.i
+	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.i
 .PHONY : csapp/csapp.c.i
 
 csapp/csapp.s: csapp/csapp.c.s
@@ -216,8 +229,8 @@ csapp/csapp.s: csapp/csapp.c.s
 
 # target to generate assembly for a file
 csapp/csapp.c.s:
-	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.s
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/csapp/csapp.c.s
+	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/csapp/csapp.c.s
 .PHONY : csapp/csapp.c.s
 
 server/server.o: server/server.cpp.o
@@ -274,6 +287,33 @@ server/servermain.cpp.s:
 	$(MAKE) -f CMakeFiles/qiaqia_server.dir/build.make CMakeFiles/qiaqia_server.dir/server/servermain.cpp.s
 .PHONY : server/servermain.cpp.s
 
+utils/error_functions.o: utils/error_functions.c.o
+
+.PHONY : utils/error_functions.o
+
+# target to build an object file
+utils/error_functions.c.o:
+	$(MAKE) -f CMakeFiles/errorFunc.dir/build.make CMakeFiles/errorFunc.dir/utils/error_functions.c.o
+.PHONY : utils/error_functions.c.o
+
+utils/error_functions.i: utils/error_functions.c.i
+
+.PHONY : utils/error_functions.i
+
+# target to preprocess a source file
+utils/error_functions.c.i:
+	$(MAKE) -f CMakeFiles/errorFunc.dir/build.make CMakeFiles/errorFunc.dir/utils/error_functions.c.i
+.PHONY : utils/error_functions.c.i
+
+utils/error_functions.s: utils/error_functions.c.s
+
+.PHONY : utils/error_functions.s
+
+# target to generate assembly for a file
+utils/error_functions.c.s:
+	$(MAKE) -f CMakeFiles/errorFunc.dir/build.make CMakeFiles/errorFunc.dir/utils/error_functions.c.s
+.PHONY : utils/error_functions.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -282,8 +322,9 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
-	@echo "... qiaqia_server"
 	@echo "... qiaqia_client"
+	@echo "... errorFunc"
+	@echo "... qiaqia_server"
 	@echo "... client/client.o"
 	@echo "... client/client.i"
 	@echo "... client/client.s"
@@ -299,6 +340,9 @@ help:
 	@echo "... server/servermain.o"
 	@echo "... server/servermain.i"
 	@echo "... server/servermain.s"
+	@echo "... utils/error_functions.o"
+	@echo "... utils/error_functions.i"
+	@echo "... utils/error_functions.s"
 .PHONY : help
 
 

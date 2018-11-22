@@ -15,8 +15,13 @@ LINK_DIRECTORIES(/usr/local/lib /usr/lib)
 #ADD_LIBRARY(csapp csapp/csapp.c csapp/csapp.h)
 #ADD_LIBRARY(server server/server.cpp)
 #ADD_LIBRARY(client client/client.cpp)
+ADD_LIBRARY(errorFunc utils/error_functions.c)
 
-ADD_EXECUTABLE(qiaqia_server server/servermain.cpp server/server.h server/server.cpp csapp/csapp.h csapp/csapp.c)
-ADD_EXECUTABLE(qiaqia_client client/clientmain.cpp client/client.h client/client.cpp csapp/csapp.h csapp/csapp.c)
-TARGET_LINK_LIBRARIES(qiaqia_server pthread)
-TARGET_LINK_LIBRARIES(qiaqia_client pthread)
+ADD_EXECUTABLE(qiaqia_server server/servermain.cpp server/server.hpp
+            server/server.cpp csapp/csapp.h csapp/csapp.c)
+
+ADD_EXECUTABLE(qiaqia_client client/clientmain.cpp client/client.h
+            client/client.cpp csapp/csapp.h csapp/csapp.c)
+
+TARGET_LINK_LIBRARIES(qiaqia_server pthread errorFunc)
+TARGET_LINK_LIBRARIES(qiaqia_client pthread errorFunc)
