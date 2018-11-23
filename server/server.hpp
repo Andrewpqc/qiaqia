@@ -73,6 +73,7 @@ namespace server_ns {
 
         Mtx *mux; //进程锁
 
+        int workerNum;
         int broadcast(int sender_fd, char *msg, int recv_len) {
             for (auto it: this->clients) {
                 if (it.first != sender_fd) {
@@ -332,10 +333,11 @@ namespace server_ns {
     public:
         std::map<int, ClientInfo> clients;
 
-        explicit Server(const std::string &port) {
+        Server(const std::string &port,int workerNum) {
             this->serverPort = port;
             this->epollFd = 0;
             this->listenFd = 0;
+            this->workerNum = workerNum;
 
             /*mux为一个在进程之间共享的互斥锁*/
             mux = (Mtx *) mmap(NULL, sizeof(*mux), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
@@ -368,7 +370,7 @@ namespace server_ns {
             set_nonblocking(this->listenFd);
 
             int fork_result;
-            for (int i = 1; i <= 4; ++i) {
+            for (int i = 1; i <= this->workerNum; ++i) {
                 fork_result = fork();
                 if (fork_result == -1) errExit("fork");
                 if (fork_result > 0) continue;
