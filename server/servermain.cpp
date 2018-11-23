@@ -19,6 +19,6 @@ int main(int argc, char **argv) {
     server_ns::Server server(port);
 
     //start the event loop
-    server.start();
+    server.start_server();
 
 }

@@ -11,6 +11,7 @@
 #include <ctime>
 #include <cstring>
 #include <unistd.h>
+#include <mutex>
 
 #include <fcntl.h>  // fcntl
 #include <sys/epoll.h> //epoll_create epoll_ctl epoll_wait
@@ -62,6 +63,7 @@ namespace server_ns {
 
         int epollFd;
 
+        std::mutex mux;
 
         int broadcast(int sender_fd, char *msg, int recv_len) {
             for (auto it: this->clients) {
@@ -158,24 +160,78 @@ namespace server_ns {
             this->clients.insert(std::pair<int, ClientInfo>(connFd, client));
         }
 
-        void create_listener() {
-            int listen_fd = this->get_listen_fd(this->serverPort);
-            if (listen_fd < 0) errExit("get_listen_fd");
+        void start_worker() {
 
             //在内核中创建事件表
             if ((this->epollFd = epoll_create(EPOLL_SIZE)) < 0)
                 errExit("epoll_create");
 
             //将监听描述符添加到epoll内核结构中
-            addfd(this->epollFd, listen_fd, true);
+            addfd(this->epollFd, this->listenFd, true);
 
             // set the listen fd to nonblocking
-            set_nonblocking(listen_fd);
-
-            this->listenFd = listen_fd;
+            set_nonblocking(this->listenFd);
 
             //give a output here
-            printf("server listening on localhost : %s\n",this->serverPort.c_str());
+
+            static struct epoll_event events[EPOLL_SIZE];
+            socklen_t client_addr_len;
+            struct sockaddr_storage client_addr;
+
+            char hostname[NI_MAXHOST], port[NI_MAXSERV], addr_str[ADDRSTRLENGTH];
+            while (true) {
+                mux.lock();
+                printf("process %d get lock\n", getpid());
+                int ready_count = epoll_wait(this->epollFd, events, EPOLL_SIZE, -1);
+                mux.unlock();
+
+
+                if (ready_count < 0) {
+                    perror("epoll_wait failure");
+                    break;
+                }
+
+                /* log the events count which are ready */
+                std::cout << "ready_count = " << ready_count << std::endl;
+
+                for (int i = 0; i < ready_count; ++i) {
+
+                    int readyFd = events[i].data.fd;
+
+                    if (readyFd == this->listenFd) {
+
+                        client_addr_len = sizeof(struct sockaddr_storage);
+                        int conn_fd = accept(listenFd, (struct sockaddr *) &client_addr, &client_addr_len);
+                        if (conn_fd == -1) {
+                            fprintf(stderr, "accept error");
+                            continue;
+                        }
+
+                        if (getnameinfo((struct sockaddr *) &client_addr, client_addr_len,
+                                        hostname, NI_MAXHOST, port, NI_MAXSERV, 0) == 0)
+                            snprintf(addr_str, ADDRSTRLENGTH, "(%s:%s)", hostname, port);
+                        else snprintf(addr_str, ADDRSTRLENGTH, "(?UNKNOWN?)");
+
+
+                        this->store_client_infomation(conn_fd, hostname, port);
+
+                        /*add the connfd to kernel event table*/
+                        addfd(epollFd, conn_fd, true);
+
+                        /*set the conn_fd to nonblock*/
+                        set_nonblocking(conn_fd);
+
+                        printf("Connection from %s", addr_str);
+                    } else { //message is comming
+                        if (this->get_msg_and_forward_to_clients(readyFd) < 0) {
+                            perror("error");
+                            close(readyFd);
+                            exit(-1);
+                        }
+                    }
+                }
+
+            }
         }
 
         int get_msg_and_forward_to_clients(int connfd) {
@@ -282,69 +338,34 @@ namespace server_ns {
             if (close(this->epollFd) == -1) errExit("close epollFd");
         }
 
-        void start() {
-            create_listener();
+        void start_server() {
+            /* 获取监听描述符 */
+            int listen_fd = this->get_listen_fd(this->serverPort);
+            if (listen_fd < 0) errExit("get_listen_fd");
 
-            socklen_t client_addr_len;
-            struct sockaddr_storage client_addr;
+            this->listenFd = listen_fd;
 
-
-            char hostname[NI_MAXHOST], port[NI_MAXSERV], addr_str[ADDRSTRLENGTH];
-
-            static struct epoll_event events[EPOLL_SIZE];
-
-            while (true) {
-
-                int ready_count = epoll_wait(this->epollFd, events, EPOLL_SIZE, -1);
-                /*timeout=-1,此处会一直阻塞，直到有事件发生*/
-
-                if (ready_count < 0) {
-                    perror("epoll_wait failure");
+            int fork_result;
+            for (int i = 0; i < 4; ++i) {
+                fork_result = fork();
+                if (fork_result == -1) errExit("fork");
+                if (fork_result > 0) continue;
+                if (fork_result == 0) {
+                    printf("start worker in process %d\n", getpid());
+                    this->start_worker();
                     break;
                 }
 
-                /* log the events count which are ready */
-                std::cout << "ready_count = " << ready_count << std::endl;
+            }
+            if (fork_result > 1) {
+                printf("server listening on localhost : %s\n", this->serverPort.c_str());
 
-                for (int i = 0; i < ready_count; ++i) {
+                for (;;) {
 
-                    int readyFd = events[i].data.fd;
-
-                    if (readyFd == this->listenFd) {
-
-                        client_addr_len = sizeof(struct sockaddr_storage);
-                        int conn_fd = accept(listenFd, (struct sockaddr *) &client_addr, &client_addr_len);
-                        if (conn_fd == -1) {
-                            fprintf(stderr, "accept error");
-                            continue;
-                        }
-
-                        if (getnameinfo((struct sockaddr *) &client_addr, client_addr_len,
-                                        hostname, NI_MAXHOST, port, NI_MAXSERV, 0) == 0)
-                            snprintf(addr_str, ADDRSTRLENGTH, "(%s:%s)", hostname, port);
-                        else snprintf(addr_str, ADDRSTRLENGTH, "(?UNKNOWN?)");
-
-
-                        this->store_client_infomation(conn_fd, hostname, port);
-
-                        /*add the connfd to kernel event table*/
-                        addfd(epollFd, conn_fd, true);
-
-                        /*set the conn_fd to nonblock*/
-                        set_nonblocking(conn_fd);
-
-                        printf("Connection from %s", addr_str);
-                    } else { //message is comming
-                        if (this->get_msg_and_forward_to_clients(readyFd) < 0) {
-                            perror("error");
-                            close(readyFd);
-                            exit(-1);
-                        }
-                    }
                 }
             }
         }
 
     }; // class Server
-    } // namespace server_ns
+} // namespace server_ns
 #endif

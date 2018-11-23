@@ -130,7 +130,7 @@ CMAKE_OBJCOPY:FILEPATH=/usr/bin/objcopy
 CMAKE_OBJDUMP:FILEPATH=/usr/bin/objdump
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=system
+CMAKE_PROJECT_NAME:STATIC=qiaqia
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/usr/bin/ranlib
@@ -183,6 +183,12 @@ CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //Dependencies for target
 errorFunc_LIB_DEPENDS:STATIC=
+
+//Value Computed by CMake
+qiaqia_BINARY_DIR:STATIC=/home/andrew/Code/qiaqia/build
+
+//Value Computed by CMake
+qiaqia_SOURCE_DIR:STATIC=/home/andrew/Code/qiaqia
 
 //Value Computed by CMake
 system_BINARY_DIR:STATIC=/home/andrew/Code/qiaqia/build

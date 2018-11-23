@@ -132,6 +132,7 @@ namespace client_ns {
             } else {
                 //关闭子进程的管道
                 close(pipe_fd[1]);
+                close(this->clientsock);
             }
         }
 
@@ -144,9 +145,7 @@ namespace client_ns {
             this->is_nickname_set = false;
         }
 
-        ~Client() {
-
-        }
+        ~Client() {}
 
         void start() {
 
@@ -277,7 +276,8 @@ namespace client_ns {
             }
 
         }
-        }; // class Client
+
+    }; // class Client
 
     } // namespace client_ns
 
