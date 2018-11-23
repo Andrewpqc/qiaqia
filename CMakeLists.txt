@@ -4,7 +4,7 @@ PROJECT(system)
 #要求CMake的最低版本为2.8
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-ADD_COMPILE_OPTIONS(-std=c++11 -Wall)
+#ADD_COMPILE_OPTIONS(-std=c++11)
 
 #添加头文件搜索路径
 INCLUDE_DIRECTORIES(/usr/local/include)
@@ -14,5 +14,4 @@ LINK_DIRECTORIES(/usr/local/lib /usr/lib)
 
 ADD_EXECUTABLE(qiaqia_server server/servermain.cpp)
 
-ADD_EXECUTABLE(qiaqia_client client/clientmain.cpp client/client.h
-            client/client.cpp)
+ADD_EXECUTABLE(qiaqia_client client/clientmain.cpp)

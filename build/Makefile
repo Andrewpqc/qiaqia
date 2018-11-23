@@ -136,33 +136,6 @@ qiaqia_client/fast:
 	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/build
 .PHONY : qiaqia_client/fast
 
-client/client.o: client/client.cpp.o
-
-.PHONY : client/client.o
-
-# target to build an object file
-client/client.cpp.o:
-	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/client/client.cpp.o
-.PHONY : client/client.cpp.o
-
-client/client.i: client/client.cpp.i
-
-.PHONY : client/client.i
-
-# target to preprocess a source file
-client/client.cpp.i:
-	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/client/client.cpp.i
-.PHONY : client/client.cpp.i
-
-client/client.s: client/client.cpp.s
-
-.PHONY : client/client.s
-
-# target to generate assembly for a file
-client/client.cpp.s:
-	$(MAKE) -f CMakeFiles/qiaqia_client.dir/build.make CMakeFiles/qiaqia_client.dir/client/client.cpp.s
-.PHONY : client/client.cpp.s
-
 client/clientmain.o: client/clientmain.cpp.o
 
 .PHONY : client/clientmain.o
@@ -227,9 +200,6 @@ help:
 	@echo "... edit_cache"
 	@echo "... qiaqia_server"
 	@echo "... qiaqia_client"
-	@echo "... client/client.o"
-	@echo "... client/client.i"
-	@echo "... client/client.s"
 	@echo "... client/clientmain.o"
 	@echo "... client/clientmain.i"
 	@echo "... client/clientmain.s"

@@ -19,14 +19,11 @@
 #include <netdb.h> //gai_strerror NI_MAXHOST NI_MAXSERV
 
 #include "../utils/error_functions.hpp"
+#include "../utils/common.h"
 
 /* 监听缓冲队列大小 */
 #define LISTENQ 50
 
-/* 内核epoll表的初始大小 */
-#define EPOLL_SIZE 500
-
-#define MAXLINE 8192
 
 /* 当系统中只要一个用户的时候给出提示消息 */
 #define CAUTION "\033[31mSYSTEM MESSAGE:\033[0mOnly you in the chat room now!"
@@ -45,23 +42,6 @@
 
 
 namespace server_ns {
-
-    void trim(const char *strIn, char *strOut) {
-
-        size_t i, j;
-
-        i = 0;
-
-        j = strlen(strIn) - 1;
-
-        while (strIn[i] == ' ')
-            ++i;
-
-        while (strIn[j] == ' ')
-            --j;
-        strncpy(strOut, strIn + i, j - i + 1);
-        strOut[j - i + 1] = '\0';
-    }
 
     typedef struct {
         std::string clientIP;
@@ -162,27 +142,6 @@ namespace server_ns {
             return listenfd;
         }
 
-        static void addfd(int epFd, int fd, bool enable_et) {
-            struct epoll_event ev;
-            ev.data.fd = fd;
-
-            /* LT is default */
-            ev.events = EPOLLIN;
-
-            /* if enable_et set to  true, then ET is used here*/
-            if (enable_et)
-                ev.events = EPOLLIN | EPOLLET;
-            if (epoll_ctl(epFd, EPOLL_CTL_ADD, fd, &ev) == -1)
-                errExit("error epoll_ctl");
-        }
-
-        static void set_nonblocking(int fd) {
-            int flags = fcntl(fd, F_GETFL);
-            if (flags == -1)
-                errExit("error fcntl F_GETFL");
-            if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-                errExit("error fcntl F_SETFL");
-        }
 
         void store_client_infomation(int connFd, char *hostname, char *port) {
             ClientInfo client;

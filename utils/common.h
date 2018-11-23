@@ -1,10 +1,16 @@
+#ifndef __COMMON_H__
+#define __COMMON_H__
+
 #include <sys/epoll.h>
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
 #include "error_functions.hpp"
 
+/* 内核epoll表的初始大小 */
 #define EPOLL_SIZE 5000
+
+#define MAXLINE 8192
 
 // 当系统中只要一个用户的时候给出提示消息
 #define CAUTION "\033[31mSYSTEM MESSAGE:\033[0mOnly you in the chat room now!"
@@ -20,30 +26,32 @@
 #define SERVER_MESSAGE "[%s] say >> %s"
 
 
-//static void addfd(int epollfd, int fd, bool enable_et) {
-//    struct epoll_event ev;
-//    ev.data.fd = fd;
-//
-//    /* LT is default */
-//    ev.events = EPOLLIN;
-//    /* if enable_et set to  true, then ET is used here*/
-//    if (enable_et)
-//        ev.events = EPOLLIN | EPOLLET;
-//    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev) == -1)
-//        errExit("error epoll_ctl");
-//}
-//
-//
-//inline static void set_nonblocking(int fd) {
-//    int flags = fcntl(fd, F_GETFL);
-//    if (flags == -1)
-//        errExit("error fcntl F_GETFL");
-//    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-//        errExit("error fcntl F_SETFL");
-//}
+
+static void addfd(int epFd, int fd, bool enable_et) {
+    struct epoll_event ev;
+    ev.data.fd = fd;
+
+    /* LT is default */
+    ev.events = EPOLLIN;
+
+    /* if enable_et set to  true, then ET is used here*/
+    if (enable_et)
+        ev.events = EPOLLIN | EPOLLET;
+    if (epoll_ctl(epFd, EPOLL_CTL_ADD, fd, &ev) == -1)
+        errExit("error epoll_ctl");
+}
 
 
-void trim(const char *strIn, char *strOut) {
+static void set_nonblocking(int fd) {
+    int flags = fcntl(fd, F_GETFL);
+    if (flags == -1)
+        errExit("error fcntl F_GETFL");
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+        errExit("error fcntl F_SETFL");
+}
+
+
+static void trim(const char *strIn, char *strOut) {
 
     size_t i, j;
 
@@ -59,3 +67,5 @@ void trim(const char *strIn, char *strOut) {
     strncpy(strOut, strIn + i, j - i + 1);
     strOut[j - i + 1] = '\0';
 }
+
+#endif

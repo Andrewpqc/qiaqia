@@ -1,7 +1,7 @@
 // #include <iostream>
 #include <cstdio>
 
-#include "client.h"
+#include "client.hpp"
 #include "../utils/cmdline.h"
 #include "../utils/asciilogo.h"
 
@@ -17,18 +17,14 @@ int main(int argc, char **argv) {
     std::string port = cmd.get<std::string>("port");
     std::string host = cmd.get<std::string>("host");
 
-    client_ns::client client(host, port);
+    client_ns::Client client(host, port);
 
-    // if init error,return...
-    if (client.init() < 0) return 0;
 
-    // format the ascii logo
+    /* format the ascii logo and show */
     sprintf(logo, ascii_logo.c_str(), host.c_str(), port.c_str());
-
-    //connected, show logo.
     printf("%s", logo);
 
-    client.start_loop();
+    client.start();
 
     return 0;
 }
