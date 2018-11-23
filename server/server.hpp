@@ -11,7 +11,8 @@
 #include <ctime>
 #include <cstring>
 #include <unistd.h>
-#include <mutex>
+#include <pthread.h>
+#include <sys/mman.h>
 
 #include <fcntl.h>  // fcntl
 #include <sys/epoll.h> //epoll_create epoll_ctl epoll_wait
@@ -54,16 +55,23 @@ namespace server_ns {
 
     } ClientInfo; // struct ClientInfo
 
+    typedef struct {
+        int num;
+        pthread_mutex_t mutex;
+        pthread_mutexattr_t mutexattr;
+    } Mtx; // struct Mtx
+
 
     class Server {
     private:
+
         int listenFd;
 
         std::string serverPort;
 
         int epollFd;
 
-        std::mutex mux;
+        Mtx *mux; //进程锁
 
         int broadcast(int sender_fd, char *msg, int recv_len) {
             for (auto it: this->clients) {
@@ -125,7 +133,7 @@ namespace server_ns {
                 if (bind(listenfd, p->ai_addr, p->ai_addrlen) == 0)
                     break; /* Success */
                 if (close(listenfd) < 0) { /* Bind failed, try the next */
-                    fprintf(stderr, "open_listenfd close failed: %s\n", strerror(errno));
+                    fprintf(stderr, "listenfd close failed: %s\n", strerror(errno));
                     return -1;
                 }
             }
@@ -172,10 +180,15 @@ namespace server_ns {
 
             char hostname[NI_MAXHOST], port[NI_MAXSERV], addr_str[ADDRSTRLENGTH];
             while (true) {
-                mux.lock();
-                int ready_count = epoll_wait(this->epollFd, events, EPOLL_SIZE, -1);
+
+                printf("Worker %d try to lock\n", workerId);
+
+                pthread_mutex_lock(&mux->mutex); //这里加锁
+
                 printf("worker %d get lock\n", workerId);
-                mux.unlock();
+                int ready_count = epoll_wait(this->epollFd, events, EPOLL_SIZE, -1);
+
+                pthread_mutex_unlock(&mux->mutex);
 
 
                 if (ready_count < 0) {
@@ -323,6 +336,14 @@ namespace server_ns {
             this->serverPort = port;
             this->epollFd = 0;
             this->listenFd = 0;
+
+            /*mux为一个在进程之间共享的互斥锁*/
+            mux = (Mtx *) mmap(NULL, sizeof(*mux), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+            memset(mux, 0x00, sizeof(*mux));
+            pthread_mutexattr_init(&mux->mutexattr);
+            pthread_mutexattr_setpshared(&mux->mutexattr, PTHREAD_PROCESS_SHARED);
+            pthread_mutex_init(&mux->mutex, &mux->mutexattr);
+
         }
 
         ~Server() {

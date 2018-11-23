@@ -15,3 +15,5 @@ LINK_DIRECTORIES(/usr/local/lib /usr/lib)
 ADD_EXECUTABLE(qiaqia_server server/servermain.cpp)
 
 ADD_EXECUTABLE(qiaqia_client client/clientmain.cpp)
+
+TARGET_LINK_LIBRARIES(qiaqia_server pthread)
