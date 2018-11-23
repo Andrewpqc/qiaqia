@@ -160,17 +160,9 @@ namespace server_ns {
             this->clients.insert(std::pair<int, ClientInfo>(connFd, client));
         }
 
-        void start_worker() {
-
+        void start_worker(int workerId) {
             //在内核中创建事件表
-            if ((this->epollFd = epoll_create(EPOLL_SIZE)) < 0)
-                errExit("epoll_create");
 
-            //将监听描述符添加到epoll内核结构中
-            addfd(this->epollFd, this->listenFd, true);
-
-            // set the listen fd to nonblocking
-            set_nonblocking(this->listenFd);
 
             //give a output here
 
@@ -181,8 +173,8 @@ namespace server_ns {
             char hostname[NI_MAXHOST], port[NI_MAXSERV], addr_str[ADDRSTRLENGTH];
             while (true) {
                 mux.lock();
-                printf("process %d get lock\n", getpid());
                 int ready_count = epoll_wait(this->epollFd, events, EPOLL_SIZE, -1);
+                printf("worker %d get lock\n", workerId);
                 mux.unlock();
 
 
@@ -201,9 +193,9 @@ namespace server_ns {
                     if (readyFd == this->listenFd) {
 
                         client_addr_len = sizeof(struct sockaddr_storage);
-                        int conn_fd = accept(listenFd, (struct sockaddr *) &client_addr, &client_addr_len);
+                        int conn_fd = accept(this->listenFd, (struct sockaddr *) &client_addr, &client_addr_len);
                         if (conn_fd == -1) {
-                            fprintf(stderr, "accept error");
+                            fprintf(stderr, "accept error\n");
                             continue;
                         }
 
@@ -221,7 +213,7 @@ namespace server_ns {
                         /*set the conn_fd to nonblock*/
                         set_nonblocking(conn_fd);
 
-                        printf("Connection from %s", addr_str);
+                        printf("Connection from %s\n", addr_str);
                     } else { //message is comming
                         if (this->get_msg_and_forward_to_clients(readyFd) < 0) {
                             perror("error");
@@ -345,14 +337,22 @@ namespace server_ns {
 
             this->listenFd = listen_fd;
 
+            if ((this->epollFd = epoll_create(EPOLL_SIZE)) < 0)
+                errExit("epoll_create");
+
+            //将监听描述符添加到epoll内核结构中
+            addfd(this->epollFd, this->listenFd, true);
+
+            // set the listen fd to nonblocking
+            set_nonblocking(this->listenFd);
+
             int fork_result;
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 1; i <= 4; ++i) {
                 fork_result = fork();
                 if (fork_result == -1) errExit("fork");
                 if (fork_result > 0) continue;
                 if (fork_result == 0) {
-                    printf("start worker in process %d\n", getpid());
-                    this->start_worker();
+                    this->start_worker(i);
                     break;
                 }
 
