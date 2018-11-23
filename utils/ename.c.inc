@@ -2,7 +2,7 @@
 
    Built on GNU/Linux x86_64 with glibc 2.27
 */
-static char *ename[] = {
+static std::string ename[] = {
     /*   0 */ "",
     /*   1 */ "EPERM", "ENOENT", "ESRCH", "EINTR", "EIO", "ENXIO",
     /*   7 */ "E2BIG", "ENOEXEC", "EBADF", "ECHILD",

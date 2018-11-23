@@ -34,16 +34,29 @@
 #undef FALSE
 #endif
 
-#ifdef __GNUC__                 /* Prevent 'gcc -Wall' complaining  */
-__attribute__ ((__noreturn__))  /* if we call this function as last */
-#endif                          /* statement in a non-void function */
+//#ifdef __GNUC__                 /* Prevent 'gcc -Wall' complaining  */
+//__attribute__ ((__noreturn__))  /* if we call this function as last */
+//#endif                          /* statement in a non-void function */
+#ifdef __GNUC__
+
+/* This macro stops 'gcc -Wall' complaining that "control reaches
+   end of non-void function" if we use the following functions to
+   terminate main() or some other non-void function. */
+
+#define NORETURN __attribute__ ((__noreturn__))
+#else
+#define NORETURN
+#endif
 
 typedef enum {
     FALSE = 0, TRUE = 1
 } Boolean;
 
 
-static void
+void
+terminate(Boolean useExit3) NORETURN;
+
+void
 terminate(Boolean useExit3) {
     char *s;
 
@@ -66,16 +79,7 @@ terminate(Boolean useExit3) {
 
 void errMsg(const char *format, ...);
 
-#ifdef __GNUC__
 
-/* This macro stops 'gcc -Wall' complaining that "control reaches
-   end of non-void function" if we use the following functions to
-   terminate main() or some other non-void function. */
-
-#define NORETURN __attribute__ ((__noreturn__))
-#else
-#define NORETURN
-#endif
 
 void errExit(const char *format, ...) NORETURN;
 
@@ -110,7 +114,7 @@ outputError(Boolean useErr, int err, Boolean flushStdout,
     if (useErr)
         snprintf(errText, BUF_SIZE, " [%s %s]",
                  (err > 0 && err <= MAX_ENAME) ?
-                 ename[err] : "?UNKNOWN?", strerror(err));
+                 ename[err].c_str() : "?UNKNOWN?", strerror(err));
     else
         snprintf(errText, BUF_SIZE, ":");
 
@@ -151,6 +155,7 @@ errExit(const char *format, ...) {
     va_end(argList);
 
     terminate(TRUE);
+
 }
 
 /* Display error message including 'errno' diagnostic, and
@@ -169,7 +174,7 @@ errExit(const char *format, ...) {
    invoking exit handlers that were established by the caller. */
 
 void
-err_exit(const char *format, ...) {
+err_exit(const char *format, ...)  {
     va_list argList;
 
     va_start(argList, format);
