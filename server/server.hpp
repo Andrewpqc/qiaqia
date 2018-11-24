@@ -3,13 +3,14 @@
 
 /*comment this macro to disable some
  * debug output in the program*/
-#define __DEVELOPMENT__
+#define __DEVELOPMENT__ 0
 
 #include <string>
 #include <map>
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
+#include <mutex>
 #include <list>
 #include <ctime> //time
 #include <cstring>
@@ -55,27 +56,14 @@ namespace server_ns {
 
     } ClientInfo; // struct ClientInfo
 
-    typedef struct {
-        int num;
-        pthread_mutex_t mutex;
-        pthread_mutexattr_t mutexattr;
-    } Mtx; // struct Mtx
-
     static std::map<int, ClientInfo> clients;
     static int listenFd;
     static int epollFd;
-    static Mtx *mux; //进程锁
+    static std::mutex io_event_mux, clients_map_mux;
 
     class Server {
     private:
-
-
-
         std::string serverPort;
-
-
-
-
 
         int workerNum;
 
@@ -165,43 +153,40 @@ namespace server_ns {
             client.clientIP = static_cast<std::string>(hostname);
             client.clientPort = static_cast<std::string>(port);
             client.connFd = connFd;
+            client.isNicknameSet = false;
 
             time_t now = time(nullptr);
             client.joinAt = ctime(&now);
             client.joinAt[strlen(client.joinAt) - 1] = '\0';
 
-            client.isNicknameSet = false;
+            clients_map_mux.lock();
             clients.insert(std::pair<int, ClientInfo>(connFd, client));
+            clients_map_mux.unlock();
         }
 
-        static void* start_worker(void* arg) {
-            //在内核中创建事件表
-            //give a output here
-            int workerId = *((int*)arg);
-
+        static void *start_worker(void *arg) {
+            char workerId = *((char *) arg);
+            printf("worker %c started\n",workerId);
             static struct epoll_event events[EPOLL_SIZE];
             socklen_t client_addr_len;
             struct sockaddr_storage client_addr;
 
             char hostname[NI_MAXHOST], port[NI_MAXSERV], addr_str[ADDRSTRLENGTH];
             while (true) {
-#ifdef __DEVELOPMENT__
-                printf("Worker %d try to lock\n", workerId);
+#if __DEVELOPMENT__
+                printf("Worker %c try to lock\n", workerId);
 #endif
-                pthread_mutex_lock(&mux->mutex); //这里加锁
-#ifdef __DEVELOPMENT__
-                printf("worker %d get lock\n", workerId);
-#endif
+                io_event_mux.lock();
+//#if __DEVLOPMENT__
+                printf("worker %c get lock\n", workerId);
+//#endif
                 int ready_count = epoll_wait(epollFd, events, EPOLL_SIZE, -1);
-
-                pthread_mutex_unlock(&mux->mutex);
-
-
+                io_event_mux.unlock();
                 if (ready_count < 0) {
                     perror("epoll_wait failure");
                     break;
                 }
-#ifdef __DEVELOPMENT__
+#if __DEVELOPMENT__
                 /* log the events count which are ready */
                 std::cout << "ready_count = " << ready_count << std::endl;
 #endif
@@ -231,7 +216,7 @@ namespace server_ns {
 
                         /*set the conn_fd to nonblock*/
                         set_nonblocking(conn_fd);
-#ifdef __DEVELOPMENT__
+#if __DEVELOPMENT__
                         printf("Connection from %s\n", addr_str);
 #endif
                     } else { //message is comming
@@ -244,6 +229,7 @@ namespace server_ns {
                 }
 
             }
+            return nullptr; // unreached statement, to remove the compile warning
         }
 
         static int get_msg_and_forward_to_clients(int connfd) {
@@ -253,7 +239,7 @@ namespace server_ns {
 
             bzero(buf, MAXLINE);
             bzero(message, MAXLINE);
-#ifdef __DEVELOPMENT__
+#if __DEVELOPMENT__
             // recv new msg
             std::cout << "read from client(clientID = " << connfd << ")" << std::endl;
 #endif
@@ -262,14 +248,15 @@ namespace server_ns {
 
             // set the current user's nickname,this will be
             // run for the first msg for every client
-            printf("isSet,%d\n", clients[connfd].isNicknameSet);
             if (!clients[connfd].isNicknameSet) {
+
+                clients_map_mux.lock();
                 clients[connfd].clientNickname = static_cast<std::string>(buf);
                 clients[connfd].isNicknameSet = true;
+                clients_map_mux.unlock();
 
                 //broadcast the welcome message to all other users
                 sprintf(message, SERVER_WELCOME, clients[connfd].clientNickname.c_str());
-                printf("set nickname\n");
                 return broadcast(connfd, message, len);
 
             }
@@ -277,11 +264,14 @@ namespace server_ns {
             // if the client close the connection
             if (len == 0) {
                 //close the server side connfd
-                if (close(connfd) != 0) errExit("error close fd");
+                if (close(connfd) == -1) errExit("error close fd");
 
                 //remove the client_info from the `clients` set
+                clients_map_mux.lock();
                 clients.erase(connfd);
-#ifdef __DEVELOPMENT__
+                clients_map_mux.unlock();
+
+#if __DEVELOPMENT__
                 //print log to the server side stdout
                 std::cout << "ClientID = " << connfd
                           << " closed.\nnow there are "
@@ -348,15 +338,6 @@ namespace server_ns {
             epollFd = 0;
             listenFd = 0;
             this->workerNum = workerNum;
-
-            /*mux为一个在进程之间共享的互斥锁*/
-            mux = (Mtx *) mmap(NULL, sizeof(*mux), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
-
-            memset(mux, 0x00, sizeof(*mux));
-            pthread_mutexattr_init(&mux->mutexattr);
-            pthread_mutexattr_setpshared(&mux->mutexattr, PTHREAD_PROCESS_SHARED);
-            pthread_mutex_init(&mux->mutex, &mux->mutexattr);
-
         }
 
         ~Server() {
@@ -393,17 +374,20 @@ namespace server_ns {
 //            }
 
             pthread_t tids[this->workerNum];
-            for(int i=0;i<this->workerNum;++i){
+            char A ='A';
+            for (int i = 0; i < this->workerNum; ++i) {
                 int s;
-                if((s=pthread_create(&tids[i],nullptr,start_worker,(void*)&i)) != 0)
-                    errExitEN(s,"pthread_create");
+                if ((s = pthread_create(&tids[i], nullptr, start_worker, (void *) &A)) != 0)
+                    errExitEN(s, "pthread_create");
+                A++;
+
             }
 
             printf("server listening on localhost : %s\n", this->serverPort.c_str());
 
-            for(int i=0;i<this->workerNum;++i){
-                int s =pthread_join(tids[i],nullptr);
-                if(s != 0) errExitEN(s,"pthread_join");
+            for (int i = 0; i < this->workerNum; ++i) {
+                int s = pthread_join(tids[i], nullptr);
+                if (s != 0) errExitEN(s, "pthread_join");
             }
 
 
