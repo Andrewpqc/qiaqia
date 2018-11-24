@@ -1,6 +1,10 @@
 #ifndef _CHATROOM_SERVER_HPP_
 #define _CHATROOM_SERVER_HPP_
 
+/*comment this macro to disable some
+ * debug output in the program*/
+#define __DEVELOPMENT__
+
 #include <string>
 #include <map>
 #include <iostream>
@@ -39,7 +43,6 @@
 #define ADDRSTRLENGTH  (NI_MAXHOST + NI_MAXSERV +10)
 
 
-
 namespace server_ns {
 
     typedef struct {
@@ -74,15 +77,12 @@ namespace server_ns {
 
         int broadcast(int sender_fd, char *msg, int recv_len) {
             for (auto it: this->clients) {
-                printf("for item\n");
                 if (it.first != sender_fd) {
-                    printf("send for item\n");
                     if (send(it.first, msg, MAXLINE, 0) < 0) {
                         return -1;
                     }
                 }
             }
-            printf("recvlen:%d\n",recv_len);
             return recv_len;
         }
 
@@ -186,9 +186,9 @@ namespace server_ns {
                 printf("Worker %d try to lock\n", workerId);
 #endif
                 pthread_mutex_lock(&mux->mutex); //这里加锁
-//#ifdef __DEVELOPMENT__
+#ifdef __DEVELOPMENT__
                 printf("worker %d get lock\n", workerId);
-//#endif
+#endif
                 int ready_count = epoll_wait(this->epollFd, events, EPOLL_SIZE, -1);
 
                 pthread_mutex_unlock(&mux->mutex);
@@ -259,7 +259,7 @@ namespace server_ns {
 
             // set the current user's nickname,this will be
             // run for the first msg for every client
-            printf("isSet,%d\n",this->clients[connfd].isNicknameSet);
+            printf("isSet,%d\n", this->clients[connfd].isNicknameSet);
             if (!this->clients[connfd].isNicknameSet) {
                 this->clients[connfd].clientNickname = static_cast<std::string>(buf);
                 this->clients[connfd].isNicknameSet = true;
@@ -337,7 +337,9 @@ namespace server_ns {
 
 
     public:
-        std::map<int, ClientInfo> clients; //这个clients的map在每一个子进程之中都有一个副本，这不是我们想要的
+        std::map<int, ClientInfo> clients;
+        //这个clients的map在每一个子进程之中都
+        // 有一个副本，这不是我们想要的
 
         Server(const std::string &port, int workerNum) {
             this->serverPort = port;
@@ -387,6 +389,7 @@ namespace server_ns {
                 }
 
             }
+
             if (fork_result > 1) {
                 printf("server listening on localhost : %s\n", this->serverPort.c_str());
 
