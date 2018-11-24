@@ -27,7 +27,7 @@
 
 
 
-static void addfd(int epFd, int fd, bool enable_et) {
+static inline void addfd(int epFd, int fd, bool enable_et) {
     struct epoll_event ev;
     ev.data.fd = fd;
 
@@ -42,7 +42,7 @@ static void addfd(int epFd, int fd, bool enable_et) {
 }
 
 
-static void set_nonblocking(int fd) {
+static inline void set_nonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL);
     if (flags == -1)
         errExit("error fcntl F_GETFL");
@@ -51,7 +51,7 @@ static void set_nonblocking(int fd) {
 }
 
 
-static void trim(const char *strIn, char *strOut) {
+static inline void trim(const char *strIn, char *strOut) {
 
     size_t i, j;
 

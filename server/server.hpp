@@ -61,22 +61,26 @@ namespace server_ns {
         pthread_mutexattr_t mutexattr;
     } Mtx; // struct Mtx
 
+    static std::map<int, ClientInfo> clients;
+    static int listenFd;
+    static int epollFd;
+    static Mtx *mux; //进程锁
 
     class Server {
     private:
 
-        int listenFd;
+
 
         std::string serverPort;
 
-        int epollFd;
 
-        Mtx *mux; //进程锁
+
+
 
         int workerNum;
 
-        int broadcast(int sender_fd, char *msg, int recv_len) {
-            for (auto it: this->clients) {
+        static int broadcast(int sender_fd, char *msg, int recv_len) {
+            for (auto it: clients) {
                 if (it.first != sender_fd) {
                     if (send(it.first, msg, MAXLINE, 0) < 0) {
                         return -1;
@@ -86,11 +90,11 @@ namespace server_ns {
             return recv_len;
         }
 
-        int show_userinfo_to_client(int connfd, int len) {
+        static int show_userinfo_to_client(int connfd, int len) {
             char message[MAXLINE];
-            sprintf(message, "\033[32mHere are %lu users online now!", this->clients.size());
+            sprintf(message, "\033[32mHere are %lu users online now!", clients.size());
             sprintf(message, "%s\nHOST        PORT    JOIN_TIME                  USERNAME", message);
-            for (auto client:this->clients) {
+            for (auto client:clients) {
 
                 sprintf(message, "%s\n%s   %s   %s   %s", message,
                         client.second.clientIP.c_str(),
@@ -155,7 +159,7 @@ namespace server_ns {
         }
 
 
-        void store_client_infomation(int connFd, char *hostname, char *port) {
+        static void store_client_infomation(int connFd, char *hostname, char *port) {
             ClientInfo client;
 
             client.clientIP = static_cast<std::string>(hostname);
@@ -167,14 +171,13 @@ namespace server_ns {
             client.joinAt[strlen(client.joinAt) - 1] = '\0';
 
             client.isNicknameSet = false;
-            this->clients.insert(std::pair<int, ClientInfo>(connFd, client));
+            clients.insert(std::pair<int, ClientInfo>(connFd, client));
         }
 
-        void start_worker(int workerId) {
+        static void* start_worker(void* arg) {
             //在内核中创建事件表
-
-
             //give a output here
+            int workerId = *((int*)arg);
 
             static struct epoll_event events[EPOLL_SIZE];
             socklen_t client_addr_len;
@@ -189,7 +192,7 @@ namespace server_ns {
 #ifdef __DEVELOPMENT__
                 printf("worker %d get lock\n", workerId);
 #endif
-                int ready_count = epoll_wait(this->epollFd, events, EPOLL_SIZE, -1);
+                int ready_count = epoll_wait(epollFd, events, EPOLL_SIZE, -1);
 
                 pthread_mutex_unlock(&mux->mutex);
 
@@ -206,10 +209,10 @@ namespace server_ns {
 
                     int readyFd = events[i].data.fd;
 
-                    if (readyFd == this->listenFd) {
+                    if (readyFd == listenFd) {
 
                         client_addr_len = sizeof(struct sockaddr_storage);
-                        int conn_fd = accept(this->listenFd, (struct sockaddr *) &client_addr, &client_addr_len);
+                        int conn_fd = accept(listenFd, (struct sockaddr *) &client_addr, &client_addr_len);
                         if (conn_fd == -1) {
                             fprintf(stderr, "accept error\n");
                             continue;
@@ -221,7 +224,7 @@ namespace server_ns {
                         else snprintf(addr_str, ADDRSTRLENGTH, "(?UNKNOWN?)");
 
 
-                        this->store_client_infomation(conn_fd, hostname, port);
+                        store_client_infomation(conn_fd, hostname, port);
 
                         /*add the connfd to kernel event table*/
                         addfd(epollFd, conn_fd, true);
@@ -232,7 +235,7 @@ namespace server_ns {
                         printf("Connection from %s\n", addr_str);
 #endif
                     } else { //message is comming
-                        if (this->get_msg_and_forward_to_clients(readyFd) < 0) {
+                        if (get_msg_and_forward_to_clients(readyFd) < 0) {
                             perror("errorp");
 //                            close(readyFd);
 //                            exit(-1);
@@ -243,7 +246,7 @@ namespace server_ns {
             }
         }
 
-        int get_msg_and_forward_to_clients(int connfd) {
+        static int get_msg_and_forward_to_clients(int connfd) {
             // buf[MAXLINE] 接收新消息
             // message[MAXLINE] 保存格式化的消息
             char buf[MAXLINE], message[MAXLINE];
@@ -259,15 +262,15 @@ namespace server_ns {
 
             // set the current user's nickname,this will be
             // run for the first msg for every client
-            printf("isSet,%d\n", this->clients[connfd].isNicknameSet);
-            if (!this->clients[connfd].isNicknameSet) {
-                this->clients[connfd].clientNickname = static_cast<std::string>(buf);
-                this->clients[connfd].isNicknameSet = true;
+            printf("isSet,%d\n", clients[connfd].isNicknameSet);
+            if (!clients[connfd].isNicknameSet) {
+                clients[connfd].clientNickname = static_cast<std::string>(buf);
+                clients[connfd].isNicknameSet = true;
 
                 //broadcast the welcome message to all other users
-                sprintf(message, SERVER_WELCOME, this->clients[connfd].clientNickname.c_str());
+                sprintf(message, SERVER_WELCOME, clients[connfd].clientNickname.c_str());
                 printf("set nickname\n");
-                return this->broadcast(connfd, message, len);
+                return broadcast(connfd, message, len);
 
             }
 
@@ -277,22 +280,22 @@ namespace server_ns {
                 if (close(connfd) != 0) errExit("error close fd");
 
                 //remove the client_info from the `clients` set
-                this->clients.erase(connfd);
+                clients.erase(connfd);
 #ifdef __DEVELOPMENT__
                 //print log to the server side stdout
                 std::cout << "ClientID = " << connfd
                           << " closed.\nnow there are "
-                          << this->clients.size()
+                          << clients.size()
                           << " client in the chat room"
                           << std::endl;
 #endif
                 // broadcast the leave info
-                sprintf(message, LEAVE_INFO, this->clients[connfd].clientNickname.c_str());
-                return this->broadcast(connfd, message, len);
+                sprintf(message, LEAVE_INFO, clients[connfd].clientNickname.c_str());
+                return broadcast(connfd, message, len);
             } else {
                 // if there only one user in the chat room,
                 // send caution message
-                if (this->clients.size() == 1) {
+                if (clients.size() == 1) {
                     if (send(connfd, CAUTION, strlen(CAUTION), 0) < 0) {
                         return -1;
                     }
@@ -300,7 +303,7 @@ namespace server_ns {
 
 
                 if (strncasecmp(buf, "$ show users", strlen("$ show users")) == 0) {
-                    return this->show_userinfo_to_client(connfd, len);
+                    return show_userinfo_to_client(connfd, len);
                 } else if (buf[0] == '>') {
                     std::string command = static_cast<std::string>(buf);
                     std::size_t pos1 = command.find_first_of(' ');
@@ -316,7 +319,7 @@ namespace server_ns {
                     trim(msg.c_str(), msg_c);
 
                     //转发给要求的人
-                    for (auto client: this->clients) {
+                    for (auto client: clients) {
                         if (client.second.clientNickname == (static_cast<std::string>(name_c))) {
                             if (send(client.first, msg_c, strlen(msg_c), 0) < 0) {
                                 return -1;
@@ -327,24 +330,23 @@ namespace server_ns {
                 }
 
                 // format the msg to be send to clients
-                sprintf(message, SERVER_MESSAGE, this->clients[connfd].clientNickname.c_str(), buf);
+                sprintf(message, SERVER_MESSAGE, clients[connfd].clientNickname.c_str(), buf);
 
                 // broadcast
-                return this->broadcast(connfd, message, len);
+                return broadcast(connfd, message, len);
 
             }
         }
 
 
     public:
-        std::map<int, ClientInfo> clients;
         //这个clients的map在每一个子进程之中都
         // 有一个副本，这不是我们想要的
 
         Server(const std::string &port, int workerNum) {
             this->serverPort = port;
-            this->epollFd = 0;
-            this->listenFd = 0;
+            epollFd = 0;
+            listenFd = 0;
             this->workerNum = workerNum;
 
             /*mux为一个在进程之间共享的互斥锁*/
@@ -358,8 +360,8 @@ namespace server_ns {
         }
 
         ~Server() {
-            if (close(this->listenFd) == -1) errExit("close listenFd");
-            if (close(this->epollFd) == -1) errExit("close epollFd");
+            if (close(listenFd) == -1) errExit("close listenFd");
+            if (close(epollFd) == -1) errExit("close epollFd");
         }
 
         void start_server() {
@@ -367,34 +369,44 @@ namespace server_ns {
             int listen_fd = this->get_listen_fd(this->serverPort);
             if (listen_fd < 0) errExit("get_listen_fd");
 
-            this->listenFd = listen_fd;
+            listenFd = listen_fd;
 
-            if ((this->epollFd = epoll_create(EPOLL_SIZE)) < 0)
+            if ((epollFd = epoll_create(EPOLL_SIZE)) < 0)
                 errExit("epoll_create");
 
             //将监听描述符添加到epoll内核结构中
-            addfd(this->epollFd, this->listenFd, true);
+            addfd(epollFd, listenFd, true);
 
             // set the listen fd to nonblocking
-            set_nonblocking(this->listenFd);
+            set_nonblocking(listenFd);
+//
+//            int fork_result;
+//            for (int i = 1; i <= this->workerNum; ++i) {
+//                fork_result = fork();
+//                if (fork_result == -1) errExit("fork");
+//                if (fork_result > 0) continue;
+//                if (fork_result == 0) {
+//                    this->start_worker(i);
+//                    break;
+//                }
+//
+//            }
 
-            int fork_result;
-            for (int i = 1; i <= this->workerNum; ++i) {
-                fork_result = fork();
-                if (fork_result == -1) errExit("fork");
-                if (fork_result > 0) continue;
-                if (fork_result == 0) {
-                    this->start_worker(i);
-                    break;
-                }
-
+            pthread_t tids[this->workerNum];
+            for(int i=0;i<this->workerNum;++i){
+                int s;
+                if((s=pthread_create(&tids[i],nullptr,start_worker,(void*)&i)) != 0)
+                    errExitEN(s,"pthread_create");
             }
 
-            if (fork_result > 1) {
-                printf("server listening on localhost : %s\n", this->serverPort.c_str());
+            printf("server listening on localhost : %s\n", this->serverPort.c_str());
 
-                _exit(0); /*父进程退出*/
+            for(int i=0;i<this->workerNum;++i){
+                int s =pthread_join(tids[i],nullptr);
+                if(s != 0) errExitEN(s,"pthread_join");
             }
+
+
         }
 
     }; // class Server
