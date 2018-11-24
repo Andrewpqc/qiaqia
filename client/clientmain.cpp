@@ -3,7 +3,7 @@
 
 #include "client.hpp"
 #include "../utils/cmdline.h"
-#include "../utils/asciilogo.h"
+#include "../logo.h"
 
 int main(int argc, char **argv) {
     cmdline::parser cmd;

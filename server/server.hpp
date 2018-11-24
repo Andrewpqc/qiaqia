@@ -22,7 +22,7 @@
 #include <sys/socket.h> // socket getaddrinfo/getnameinfo
 #include <netdb.h> //gai_strerror NI_MAXHOST NI_MAXSERV
 #include "../utils/error_functions.hpp"
-#include "../utils/common.h" // addfd set_nonblocking trim
+#include "../common.h" // addfd set_nonblocking trim
 
 /* 监听缓冲队列大小 */
 #define LISTENQ 50
@@ -166,7 +166,7 @@ namespace server_ns {
 
         static void *start_worker(void *arg) {
             char workerId = *((char *) arg);
-            printf("worker %c started\n",workerId);
+            printf("worker %c started\n", workerId);
             static struct epoll_event events[EPOLL_SIZE];
             socklen_t client_addr_len;
             struct sockaddr_storage client_addr;
@@ -330,9 +330,6 @@ namespace server_ns {
 
 
     public:
-        //这个clients的map在每一个子进程之中都
-        // 有一个副本，这不是我们想要的
-
         Server(const std::string &port, int workerNum) {
             this->serverPort = port;
             epollFd = 0;
@@ -374,7 +371,7 @@ namespace server_ns {
 //            }
 
             pthread_t tids[this->workerNum];
-            char A ='A';
+            char A = 'A';
             for (int i = 0; i < this->workerNum; ++i) {
                 int s;
                 if ((s = pthread_create(&tids[i], nullptr, start_worker, (void *) &A)) != 0)

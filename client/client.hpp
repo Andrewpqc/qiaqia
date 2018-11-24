@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <netdb.h>
 
-#include "../utils/common.h"
+#include "../common.h"
 #include "../utils/error_functions.hpp"
 
 namespace client_ns {
