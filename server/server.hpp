@@ -67,7 +67,7 @@ namespace server_ns {
 
         int workerNum;
 
-        static int broadcast(int sender_fd, char *msg, int recv_len) {
+        static int broadcast(int sender_fd, char *msg) {
             for (auto it: clients) {
                 if (it.first != sender_fd) {
                     if (send(it.first, msg, MAXLINE, 0) < 0) {
@@ -75,10 +75,10 @@ namespace server_ns {
                     }
                 }
             }
-            return recv_len;
+            return 0;
         }
 
-        static int show_userinfo_to_client(int connfd, int len) {
+        static int show_userinfo_to_client(int connfd) {
             char message[MAXLINE];
             sprintf(message, "\033[32mHere are %lu users online now!", clients.size());
             sprintf(message, "%s\nHOST        PORT    JOIN_TIME                  USERNAME", message);
@@ -93,7 +93,7 @@ namespace server_ns {
             if (send(connfd, message, strlen(message), 0) < 0) {
                 return -1;
             }
-            return len;
+            return 0;
         }
 
         int get_listen_fd(const std::string &port) {
@@ -155,8 +155,8 @@ namespace server_ns {
             client.isNicknameSet = false;
 
             time_t now = time(nullptr);
-            char * now_time_str = ctime(&now);
-            now_time_str[strlen(now_time_str)-1]='\0';
+            char *now_time_str = ctime(&now);
+            now_time_str[strlen(now_time_str) - 1] = '\0';
             client.joinAt = std::string(now_time_str);
 
             clients_map_mux.lock();
@@ -197,13 +197,25 @@ namespace server_ns {
 
                     int readyFd = events[i].data.fd;
 
-                    if (readyFd == listenFd) {
+                    /*error case*/
+                    if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
+                        (!(events[i].events & EPOLLIN))) {
+                        fprintf(stderr, "epoll error\n");
+                        close(events[i].data.fd);
+                        continue;
+                    }
 
+                    /*new connection*/
+                    if (readyFd == listenFd) {
                         client_addr_len = sizeof(struct sockaddr_storage);
                         int conn_fd = accept(listenFd, (struct sockaddr *) &client_addr, &client_addr_len);
                         if (conn_fd == -1) {
-                            fprintf(stderr, "accept error\n");
-                            continue;
+                            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                                // we processed all of the connections
+                                break;
+                            } else {
+                                errExit("error accept");
+                            }
                         }
 
                         if (getnameinfo((struct sockaddr *) &client_addr, client_addr_len,
@@ -236,17 +248,64 @@ namespace server_ns {
         }
 
         static int get_msg_and_forward_to_clients(int connfd) {
-            // buf[MAXLINE] 接收新消息
-            // message[MAXLINE] 保存格式化的消息
-            char buf[MAXLINE], message[MAXLINE];
 
-            bzero(buf, MAXLINE);
-            bzero(message, MAXLINE);
 #if __DEVELOPMENT__
-            // recv new msg
             std::cout << "read from client(clientID = " << connfd << ")" << std::endl;
 #endif
-            ssize_t len = recv(connfd, buf, MAXLINE, 0);
+            char buf[MAXLINE];
+            bzero(buf, MAXLINE);
+            std::string byte_stream = "";
+            for (;;) {
+                ssize_t len = recv(connfd, buf, MAXLINE, 0);
+
+                //error case
+                if (len == -1) {
+                    if(errno==EINTR){
+                        continue;
+                    } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        break;
+                    } else {
+                        //error recv
+                        return -1;
+                    }
+                }
+
+                    //client side closed
+                else if (len == 0) {
+
+                    if (close(connfd) < 0) errExit("error close fd");
+
+                    //remove client
+                    clients_map_mux.lock();
+                    clients.erase(connfd);
+                    clients_map_mux.unlock();
+#if __DEVELOPMENT__
+                    //print log to the server side stdout
+                std::cout << "ClientID = " << connfd
+                          << " closed.\nnow there are "
+                          << clients.size()
+                          << " client in the chat room"
+                          << std::endl;
+#endif
+
+                    // broadcast leave information
+                    char message[MAXLINE];
+                    bzero(message, MAXLINE);
+                    sprintf(message, LEAVE_INFO, clients[connfd].clientNickname.c_str());
+                    if (broadcast(connfd, message) == -1) return -1;
+                    else return 0;
+                } else {
+                    // add buf to
+                    byte_stream += std::string(buf);
+
+                    bzero(buf, MAXLINE);
+                }
+
+            }
+
+            //byte_string就是消息
+
+
 
 
             // set the current user's nickname,this will be
@@ -259,76 +318,59 @@ namespace server_ns {
                 clients_map_mux.unlock();
 
                 //broadcast the welcome message to all other users
+                char message[MAXLINE];
+                bzero(message, MAXLINE);
                 sprintf(message, SERVER_WELCOME, clients[connfd].clientNickname.c_str());
-                return broadcast(connfd, message, len);
-
+                if (broadcast(connfd, message) == -1) return -1;
+                else return 0;
             }
 
-            // if the client close the connection
-            if (len == 0) {
-                //close the server side connfd
-                if (close(connfd) == -1) errExit("error close fd");
 
-                //remove the client_info from the `clients` set
-                clients_map_mux.lock();
-                clients.erase(connfd);
-                clients_map_mux.unlock();
-
-#if __DEVELOPMENT__
-                //print log to the server side stdout
-                std::cout << "ClientID = " << connfd
-                          << " closed.\nnow there are "
-                          << clients.size()
-                          << " client in the chat room"
-                          << std::endl;
-#endif
-                // broadcast the leave info
-                sprintf(message, LEAVE_INFO, clients[connfd].clientNickname.c_str());
-                return broadcast(connfd, message, len);
-            } else {
-                // if there only one user in the chat room,
-                // send caution message
-                if (clients.size() == 1) {
-                    if (send(connfd, CAUTION, strlen(CAUTION), 0) < 0) {
-                        return -1;
-                    }
+            // if there only one user in the chat room,
+            // send caution message
+            if (clients.size() == 1) {
+                if (send(connfd, CAUTION, strlen(CAUTION), 0) < 0) {
+                    return -1;
                 }
+            }
 
 
-                if (strncasecmp(buf, "$ show users", strlen("$ show users")) == 0) {
-                    return show_userinfo_to_client(connfd, len);
-                } else if (buf[0] == '>') {
-                    std::string command = static_cast<std::string>(buf);
-                    std::size_t pos1 = command.find_first_of(' ');
-                    std::size_t pos2 = command.find_last_of(' ');
+            if (strncasecmp(byte_stream.c_str(), "$ show users", strlen("$ show users")) == 0) {
+                if (show_userinfo_to_client(connfd) == -1) return -1;
+                else return 0;
+            } else if (byte_stream[0] == '>') {
+                std::size_t pos1 = byte_stream.find_first_of(' ');
+                std::size_t pos2 = byte_stream.find_last_of(' ');
 
-                    //提取出name,msg
-                    std::string name = command.substr(pos1 + 1, pos2 - 1);
-                    std::string msg = command.substr(pos2 + 1);
+                //提取出name,msg
+                std::string name = byte_stream.substr(pos1 + 1, pos2 - 1);
+                std::string msg = byte_stream.substr(pos2 + 1);
 
-                    //去掉可能的空格
-                    char name_c[name.size()], msg_c[msg.size()];
-                    trim(name.c_str(), name_c);
-                    trim(msg.c_str(), msg_c);
+                //去掉可能的空格
+                char name_c[name.size()], msg_c[msg.size()];
+                trim(name.c_str(), name_c);
+                trim(msg.c_str(), msg_c);
 
-                    //转发给要求的人
-                    for (auto client: clients) {
-                        if (client.second.clientNickname == (static_cast<std::string>(name_c))) {
-                            if (send(client.first, msg_c, strlen(msg_c), 0) < 0) {
-                                return -1;
-                            }
+                //转发给要求的人
+                for (auto client: clients) {
+                    if (client.second.clientNickname == (static_cast<std::string>(name_c))) {
+                        if (send(client.first, msg_c, strlen(msg_c), 0) < 0) {
+                            return -1;
                         }
                     }
-                    return len;
                 }
-
-                // format the msg to be send to clients
-                sprintf(message, SERVER_MESSAGE, clients[connfd].clientNickname.c_str(), buf);
-
-                // broadcast
-                return broadcast(connfd, message, len);
-
+                return 0;
             }
+
+            char message[MAXLINE];
+            bzero(message, MAXLINE);
+            // format the msg to be send to clients
+            sprintf(message, SERVER_MESSAGE, clients[connfd].clientNickname.c_str(), byte_stream.c_str());
+
+            printf("消息：%s\n",byte_stream.c_str());
+            // broadcast
+            if (broadcast(connfd, message) == -1) return -1;
+            else return 0;
         }
 
 
@@ -355,11 +397,10 @@ namespace server_ns {
             if ((epollFd = epoll_create(EPOLL_SIZE)) < 0)
                 errExit("epoll_create");
 
-            /* 将监听描述符添加到epoll内核结构中,这里使用的是水平触发 */
-            addfd(epollFd, listenFd, false);
+            /* 将监听描述符添加到epoll内核结构中 */
+            addfd(epollFd, listenFd, true);
 
-            /* 监听描述符不需要设置为非阻塞*/
-            //set_nonblocking(listenFd);
+            set_nonblocking(listenFd);
 
 //            int fork_result;
 //            for (int i = 1; i <= this->workerNum; ++i) {
