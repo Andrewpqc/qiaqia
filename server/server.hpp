@@ -70,7 +70,7 @@ namespace server_ns {
         static int broadcast(int sender_fd, char *msg) {
             for (auto it: clients) {
                 if (it.first != sender_fd) {
-                    if (send(it.first, msg, MAXLINE, 0) < 0) {
+                    if (send(it.first, msg, MAXLINE, 0) < 0 && (errno != EAGAIN || errno != EWOULDBLOCK)) {
                         return -1;
                     }
                 }
@@ -90,7 +90,7 @@ namespace server_ns {
                         client.second.clientNickname.c_str());
             }
             sprintf(message, "%s\033[0m", message);
-            if (send(connfd, message, strlen(message), 0) < 0) {
+            if (send(connfd, message, strlen(message), 0) < 0 && (errno != EAGAIN || errno != EWOULDBLOCK)) {
                 return -1;
             }
             return 0;
@@ -260,7 +260,7 @@ namespace server_ns {
 
                 //error case
                 if (len == -1) {
-                    if(errno==EINTR){
+                    if (errno == EINTR) {
                         continue;
                     } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         break;
@@ -303,17 +303,11 @@ namespace server_ns {
 
             }
 
-            //byte_string就是消息
-
-
-
-
             // set the current user's nickname,this will be
             // run for the first msg for every client
             if (!clients[connfd].isNicknameSet) {
-
                 clients_map_mux.lock();
-                clients[connfd].clientNickname = static_cast<std::string>(buf);
+                clients[connfd].clientNickname = byte_stream;
                 clients[connfd].isNicknameSet = true;
                 clients_map_mux.unlock();
 
@@ -329,7 +323,7 @@ namespace server_ns {
             // if there only one user in the chat room,
             // send caution message
             if (clients.size() == 1) {
-                if (send(connfd, CAUTION, strlen(CAUTION), 0) < 0) {
+                if (send(connfd, CAUTION, strlen(CAUTION), 0) < 0 && (errno != EAGAIN || errno != EWOULDBLOCK)) {
                     return -1;
                 }
             }
@@ -354,7 +348,8 @@ namespace server_ns {
                 //转发给要求的人
                 for (auto client: clients) {
                     if (client.second.clientNickname == (static_cast<std::string>(name_c))) {
-                        if (send(client.first, msg_c, strlen(msg_c), 0) < 0) {
+                        if (send(client.first, msg_c, strlen(msg_c), 0) < 0 &&
+                            (errno != EAGAIN || errno != EWOULDBLOCK)) {
                             return -1;
                         }
                     }
@@ -367,7 +362,7 @@ namespace server_ns {
             // format the msg to be send to clients
             sprintf(message, SERVER_MESSAGE, clients[connfd].clientNickname.c_str(), byte_stream.c_str());
 
-            printf("消息：%s\n",byte_stream.c_str());
+            printf("消息：%s\n", byte_stream.c_str());
             // broadcast
             if (broadcast(connfd, message) == -1) return -1;
             else return 0;
