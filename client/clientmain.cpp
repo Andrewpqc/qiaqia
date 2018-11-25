@@ -2,8 +2,8 @@
 #include <cstdio>
 
 #include "client.hpp"
-#include "../utils/cmdline.h"
-#include "../logo.h"
+#include "cmdline.h"
+#include "logo.h"
 
 int main(int argc, char **argv) {
     cmdline::parser cmd;

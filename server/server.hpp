@@ -21,8 +21,8 @@
 #include <sys/epoll.h> //epoll_create epoll_ctl epoll_wait
 #include <sys/socket.h> // socket getaddrinfo/getnameinfo
 #include <netdb.h> //gai_strerror NI_MAXHOST NI_MAXSERV
-#include "../utils/error_functions.hpp"
-#include "../common.h" // addfd set_nonblocking trim
+#include "error_functions.hpp"
+#include "common.h" // addfd set_nonblocking trim
 
 /* 监听缓冲队列大小 */
 #define LISTENQ 50

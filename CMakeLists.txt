@@ -7,10 +7,12 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 ADD_COMPILE_OPTIONS(-std=c++11 -Wall)
 
 #添加头文件搜索路径
-INCLUDE_DIRECTORIES(/usr/local/include)
+INCLUDE_DIRECTORIES(. ./utils)
 
 #添加库文件搜索路径
 LINK_DIRECTORIES(/usr/local/lib /usr/lib)
+
+
 
 ADD_EXECUTABLE(qiaqia_server server/servermain.cpp)
 

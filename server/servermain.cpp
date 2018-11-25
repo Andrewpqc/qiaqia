@@ -5,7 +5,7 @@
 #include <sys/sysinfo.h>
 
 #include "server.hpp"
-#include "../utils/cmdline.h"
+#include "cmdline.h"
 
 
 int main(int argc, char **argv) {
