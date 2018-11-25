@@ -43,7 +43,7 @@ Qiaqia is made up of two components, the `qiaqia_server` and the `qiaqia_client`
 git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia/build && cmake .. && make
 ```
 ### install by binary
-go to the [release page]() to download the qiaqia binary package
+go to the [release page](https://github.com/Andrewpqc/qiaqia/releases/tag/v1.0.0) to download the qiaqia binary package
 
 
 ## start
@@ -51,11 +51,11 @@ Before you start `qiaqia_client`, you must make sure that `qiaqia_server` is alr
 
 You can start `qiaqia_server` like the following command:
 ``` bash
-qiaqia_server -p <port to be listen>
+qiaqia_server -p <port to be listen> -w <number of worker threads>
 ```
 I already deployed a `qiaqia_server` on my machine at `120.77.220.239:8765`, so you can a quick start like the following:
 ``` bash
-qiaqia_client -h 120.77.220.239 -p 8765  //it' down now :<
+qiaqia_client -h 120.77.220.239 -p 8765  //it's down now
 ```
 then,choose a pretty nickname for yourself and start. Enjory!
 ```
