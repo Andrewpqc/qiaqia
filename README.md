@@ -37,25 +37,14 @@ A command line chat application for geeks.
     # Mike !Amy ...         : block Mick and unblock Amy.
 ```
 ## install
-Qiaqia is made up of two components, the `qiaqia_server` and the `qiaqia_client`. So you have three choices to install:
-+ install `qiaqia_server`
+Qiaqia is made up of two components, the `qiaqia_server` and the `qiaqia_client`.
+### install by source
 ``` bash
-git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia && make server && sudo make install
+git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia/build && cmake .. && make
 ```
-+ install `qiaqia_client`
-``` bash
-git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia && make client && sudo make install
-```
+### install by binary
+go to the [release page]() to download the qiaqia binary package
 
-+ both
-``` bash
-git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia && make && sudo make install
-```
-Once you have finished one of the commands, the corresponding executable binary file will be placed under the `/usr/local/bin/` directory of your machine. If you want to uninstall Qiaqia,just to input: 
-``` bash
-sudo rm /usr/local/bin/qiaqia*
-```
-in you terminal.
 
 ## start
 Before you start `qiaqia_client`, you must make sure that `qiaqia_server` is already started on your local machine or anywhere network can reach.
