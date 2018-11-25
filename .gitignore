@@ -36,4 +36,4 @@
 qiaqia_server
 qiaqia_client
 cmake-build-debug/
-build/CMakeFiles/
+build/
