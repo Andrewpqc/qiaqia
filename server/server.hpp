@@ -50,7 +50,7 @@ namespace server_ns {
         std::string clientIP;
         std::string clientPort;
         std::string clientNickname;
-        char *joinAt;
+        std::string joinAt;
         int connFd;
         bool isNicknameSet;
 
@@ -83,11 +83,10 @@ namespace server_ns {
             sprintf(message, "\033[32mHere are %lu users online now!", clients.size());
             sprintf(message, "%s\nHOST        PORT    JOIN_TIME                  USERNAME", message);
             for (auto client:clients) {
-
                 sprintf(message, "%s\n%s   %s   %s   %s", message,
                         client.second.clientIP.c_str(),
                         client.second.clientPort.c_str(),
-                        client.second.joinAt,
+                        client.second.joinAt.c_str(),
                         client.second.clientNickname.c_str());
             }
             sprintf(message, "%s\033[0m", message);
@@ -156,8 +155,9 @@ namespace server_ns {
             client.isNicknameSet = false;
 
             time_t now = time(nullptr);
-            client.joinAt = ctime(&now);
-            client.joinAt[strlen(client.joinAt) - 1] = '\0';
+            char * now_time_str = ctime(&now);
+            now_time_str[strlen(now_time_str)-1]='\0';
+            client.joinAt = std::string(now_time_str);
 
             clients_map_mux.lock();
             clients.insert(std::pair<int, ClientInfo>(connFd, client));
@@ -165,8 +165,11 @@ namespace server_ns {
         }
 
         static void *start_worker(void *arg) {
+#if __DEVELOPMENT__
+
             char workerId = *((char *) arg);
             printf("worker %c started\n", workerId);
+#endif
             static struct epoll_event events[EPOLL_SIZE];
             socklen_t client_addr_len;
             struct sockaddr_storage client_addr;
@@ -177,9 +180,9 @@ namespace server_ns {
                 printf("Worker %c try to lock\n", workerId);
 #endif
                 io_event_mux.lock();
-//#if __DEVLOPMENT__
+#if __DEVLOPMENT__
                 printf("worker %c get lock\n", workerId);
-//#endif
+#endif
                 int ready_count = epoll_wait(epollFd, events, EPOLL_SIZE, -1);
                 io_event_mux.unlock();
                 if (ready_count < 0) {
@@ -352,12 +355,12 @@ namespace server_ns {
             if ((epollFd = epoll_create(EPOLL_SIZE)) < 0)
                 errExit("epoll_create");
 
-            //将监听描述符添加到epoll内核结构中
-            addfd(epollFd, listenFd, true);
+            /* 将监听描述符添加到epoll内核结构中,这里使用的是水平触发 */
+            addfd(epollFd, listenFd, false);
 
-            // set the listen fd to nonblocking
-            set_nonblocking(listenFd);
-//
+            /* 监听描述符不需要设置为非阻塞*/
+            //set_nonblocking(listenFd);
+
 //            int fork_result;
 //            for (int i = 1; i <= this->workerNum; ++i) {
 //                fork_result = fork();
