@@ -12,7 +12,7 @@
 #include "common.h"
 #include "error_functions.hpp"
 
-
+#define INDEX "                          "
 
 namespace client_ns {
 
@@ -229,11 +229,11 @@ namespace client_ns {
                                     if ((start == 0 || start == 15) && (end != std::string::npos)) {
                                         std::string username = msg.substr(start + 1, end - 1);
                                         if (this->is_nickname_set &&this->blocked_user.find(username) == this->blocked_user.end()) {
-                                            std::cout << message << std::endl;
+                                            std::cout<<INDEX<<message << std::endl;
                                         }
                                     } else {
                                         if(this->is_nickname_set)
-                                        std::cout << message << std::endl;
+                                        std::cout << INDEX <<message << std::endl;
                                     }
 
                                 }
