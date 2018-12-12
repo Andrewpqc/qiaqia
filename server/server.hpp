@@ -275,6 +275,8 @@ namespace server_ns {
 
                     if (close(connfd) < 0) errExit("error close fd");
 
+
+                    const char * the_leave_user_name =  clients[connfd].clientNickname.c_str();
                     //remove client
                     clients_map_mux.lock();
                     clients.erase(connfd);
@@ -291,7 +293,7 @@ namespace server_ns {
                     // broadcast leave information
                     char message[MAXLINE];
                     bzero(message, MAXLINE);
-                    sprintf(message, LEAVE_INFO, clients[connfd].clientNickname.c_str());
+                    sprintf(message, LEAVE_INFO, the_leave_user_name);
                     if (broadcast(connfd, message) == -1) return -1;
                     else return 0;
                 } else {
