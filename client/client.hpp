@@ -12,6 +12,8 @@
 #include "common.h"
 #include "error_functions.hpp"
 
+
+
 namespace client_ns {
 
     class Client {
@@ -45,7 +47,6 @@ namespace client_ns {
         void handle_block_cmd(char *message) {
             char *user;
             user = strtok(message, " ");
-            // std::cout<<user<<std::endl;
             while ((user = strtok(NULL, " "))) {
                 std::string username = static_cast<std::string>(user);
                 if (user[0] == '!') {
@@ -181,10 +182,7 @@ namespace client_ns {
                         bzero(&message, MAXLINE);
                         fgets(message, MAXLINE, stdin);
                         //客户端发给服务器的第一句话为客户端自己的名字
-                        if (!is_nickname_set) {
-                            this->is_nickname_set = true;
-                            this->nickname = static_cast<std::string>(message);
-                        }
+
                         trim(message, message);
 
                         // 如果客户输出exit,退出
@@ -218,6 +216,7 @@ namespace client_ns {
                             if (events[i].data.fd == this->clientsock) {
                                 //接受服务端消息
                                 ssize_t ret = recv(this->clientsock, message, MAXLINE, 0);
+
                                 // ret= 0 服务端关闭
                                 if (ret == 0) {
                                     std::cout << "Server closed connection: " << this->clientsock << std::endl;
@@ -229,10 +228,11 @@ namespace client_ns {
                                     std::size_t end = msg.find_first_of(']');
                                     if ((start == 0 || start == 15) && (end != std::string::npos)) {
                                         std::string username = msg.substr(start + 1, end - 1);
-                                        if (this->blocked_user.find(username) == this->blocked_user.end()) {
+                                        if (this->is_nickname_set &&this->blocked_user.find(username) == this->blocked_user.end()) {
                                             std::cout << message << std::endl;
                                         }
                                     } else {
+                                        if(this->is_nickname_set)
                                         std::cout << message << std::endl;
                                     }
 
@@ -247,6 +247,13 @@ namespace client_ns {
                                 if (ret == 0)
                                     isClientwork = false;
                                 else {
+
+                                    if (!is_nickname_set) {
+                                        this->is_nickname_set = true;
+                                        this->nickname = static_cast<std::string>(message);
+                                        std::cout<<"Congratulations, you successfully logged in."<<std::endl;
+                                    }
+
                                     if (message[0] == '#') {
                                         this->handle_block_cmd(message);
                                         continue;
