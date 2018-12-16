@@ -40,7 +40,7 @@ A command line chat application for geeks.
 Qiaqia is made up of two components, the `qiaqia_server` and the `qiaqia_client`.
 ### install by source
 ``` bash
-git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia/build && cmake .. && make
+git clone https://github.com/Andrewpqc/qiaqia.git && cd qiaqia && mkdir build && cd build && cmake .. && make
 ```
 ### install by binary
 go to the [release page](https://github.com/Andrewpqc/qiaqia/releases/tag/v1.0.0) to download the qiaqia binary package
