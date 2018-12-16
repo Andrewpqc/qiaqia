@@ -55,7 +55,7 @@ qiaqia_server -p <port to be listen> -w <number of worker threads>
 ```
 I already deployed a `qiaqia_server` on my machine at `120.77.220.239:8765`, so you can a quick start like the following:
 ``` bash
-qiaqia_client -h 120.77.220.239 -p 8765  //it's down now
+qiaqia_client -h 120.77.220.239 -p 8585
 ```
 then,choose a pretty nickname for yourself and start. Enjory!
 ```
