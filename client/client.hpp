@@ -12,7 +12,7 @@
 #include "common.h"
 #include "error_functions.hpp"
 
-#define INDEX "                          "
+#define INDEX "                 "
 
 namespace client_ns {
 
@@ -39,6 +39,7 @@ namespace client_ns {
 
         // 表示客户端是否正常工作
         bool isClientwork;
+
 
         char message[MAXLINE];
 
@@ -137,6 +138,18 @@ namespace client_ns {
             }
         }
 
+        bool handle_clear_and_exit(char *message) {
+            if (strncasecmp(message, "exit", 4) == 0) {
+                isClientwork = false;
+                return true;
+            } else if (strncasecmp(message, "clear", 5) == 0) {
+                system("clear");
+                return true;
+            } else {
+                return false;
+            }
+        }
+
     public:
         Client(const std::string &host, const std::string &port) {
             this->server_host = host;
@@ -181,20 +194,11 @@ namespace client_ns {
                     while (isClientwork) {
                         bzero(&message, MAXLINE);
                         fgets(message, MAXLINE, stdin);
-                        //客户端发给服务器的第一句话为客户端自己的名字
 
                         trim(message, message);
 
-                        // 如果客户输出exit,退出
-                        if (strncasecmp(message, "exit", strlen("exit")) == 0) {
-                            isClientwork = false;
-                            continue;
-                        } else if (strncasecmp(message, "clear", strlen("clear")) == 0) {
-                            system("clear");
-                            continue;
-                        }
+                        if (this->handle_clear_and_exit(message)) continue;
 
-                        //将用户的输入写入管道，发送给父进程
                         if (write(pipe_fd[1], message, strlen(message) - 1) < 0) {
                             errExit("write pipe");
                         }
@@ -214,32 +218,51 @@ namespace client_ns {
                             bzero(&message, MAXLINE);
 
                             if (events[i].data.fd == this->clientsock) {
-                                //接受服务端消息
-                                ssize_t ret = recv(this->clientsock, message, MAXLINE, 0);
 
-                                // ret= 0 服务端关闭
-                                if (ret == 0) {
-                                    std::cout << "Server closed connection: " << this->clientsock << std::endl;
-                                    close(this->clientsock);
-                                    isClientwork = false;
-                                } else {
-                                    std::string msg = static_cast<std::string>(message);
-                                    std::size_t start = msg.find_first_of('[');
-                                    std::size_t end = msg.find_first_of(']');
-                                    if ((start == 0 || start == 15) && (end != std::string::npos)) {
-                                        std::string username = msg.substr(start + 1, end - 1);
-                                        if (this->is_nickname_set &&this->blocked_user.find(username) == this->blocked_user.end()) {
-                                            std::cout<<INDEX<<message << std::endl;
+
+                                char buf[MAXLINE];
+                                bzero(buf, MAXLINE);
+                                std::string byte_stream;
+                                for (;;) {
+                                    ssize_t len = read(this->clientsock, buf, MAXLINE);
+                                    //error case
+                                    if (len == -1) {
+                                        if (errno == EINTR) {
+                                            continue;
+                                        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                                            break;
+                                        } else {
+                                            std::cout << "Server closed connection: " << this->clientsock << std::endl;
+                                            close(this->clientsock);
+                                            isClientwork = false;
+                                            break;
                                         }
+                                    } else if (len == 0) {
+                                        std::cout << "Server closed connection: " << this->clientsock << std::endl;
+                                        close(this->clientsock);
+                                        isClientwork = false;
                                     } else {
-                                        if(this->is_nickname_set)
-                                        std::cout << INDEX <<message << std::endl;
+                                        byte_stream += std::string(buf);
+                                        bzero(buf, MAXLINE);
                                     }
-
                                 }
-                            }
-                                //子进程写入事件发生，父进程处理并发送服务端
-                            else {
+
+                                if (byte_stream.empty())
+                                    continue;
+
+                                std::size_t start = byte_stream.find_first_of('[');
+                                std::size_t end = byte_stream.find_first_of(']');
+                                if ((start == 0 || start == 15) && (end != std::string::npos)) {
+                                    std::string username = byte_stream.substr(start + 1, end - 1);
+                                    if (this->is_nickname_set
+                                        && this->blocked_user.find(username) == this->blocked_user.end()) {
+                                        std::cout << INDEX << byte_stream << std::endl;
+                                    }
+                                } else {
+                                    if (this->is_nickname_set)
+                                        std::cout << INDEX << byte_stream << std::endl;
+                                }
+                            } else {
                                 //父进程从管道中读取数据
                                 ssize_t ret = read(events[i].data.fd, message, MAXLINE);
 
@@ -247,24 +270,22 @@ namespace client_ns {
                                 if (ret == 0)
                                     isClientwork = false;
                                 else {
-
                                     if (!is_nickname_set) {
                                         this->is_nickname_set = true;
                                         this->nickname = static_cast<std::string>(message);
-                                        std::cout<<"Congratulations, you successfully logged in."<<std::endl;
+                                        std::cout<<"Congratulations, you successfully logged in!"<<std::endl;
                                     }
 
                                     if (message[0] == '#') {
                                         this->handle_block_cmd(message);
                                         continue;
                                     } else if (strncasecmp(message, "$ show blocked", strlen("$ show blocked")) == 0) {
-                                        if (this->blocked_user.size() == 0) {
+                                        if (this->blocked_user.empty()) {
                                             std::cout << "\033[32myou not block any people now!\033[0m" << std::endl;
                                         } else {
                                             std::cout << "\033[32myou blocked the following people:" << std::endl;
-                                            for (auto it = this->blocked_user.begin();
-                                                 it != this->blocked_user.end(); it++) {
-                                                std::cout << *it << std::endl;
+                                            for (auto it :this->blocked_user) {
+                                                std::cout << it << std::endl;
                                             }
                                             std::cout << "\033[0m";
                                         }
@@ -286,6 +307,6 @@ namespace client_ns {
 
     }; // class Client
 
-    } // namespace client_ns
+} // namespace client_ns
 
 #endif

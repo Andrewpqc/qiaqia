@@ -254,7 +254,7 @@ namespace server_ns {
 #endif
             char buf[MAXLINE];
             bzero(buf, MAXLINE);
-            std::string byte_stream = "";
+            std::string byte_stream;
             for (;;) {
                 ssize_t len = recv(connfd, buf, MAXLINE, 0);
 
@@ -272,7 +272,7 @@ namespace server_ns {
 
                     //client side closed
                 else if (len == 0) {
-
+                    std::cout<<"client close"<<std::endl;
                     if (close(connfd) < 0) errExit("error close fd");
 
 
@@ -305,6 +305,9 @@ namespace server_ns {
 
             }
 
+            if(byte_stream.empty()){
+                return 0;
+            }
             // set the current user's nickname,this will be
             // run for the first msg for every client
             if (!clients[connfd].isNicknameSet) {
