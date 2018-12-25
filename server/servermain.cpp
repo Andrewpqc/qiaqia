@@ -19,7 +19,7 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
-*/
+**/
 
 #include <iostream>
 #include <cstdlib>
@@ -30,7 +30,6 @@
 #include "server.hpp"
 #include "cmdline.h"
 
-
 int main(int argc, char **argv) {
     /*command parser*/
     cmdline::parser cmd;
@@ -38,15 +37,17 @@ int main(int argc, char **argv) {
                                       " default 8080", false, "8080");
     cmd.add<int>("workerNum", 'w', "number of worker processes, "
                                    "default is the CPU cores in the system", false, get_nprocs());
-    cmd.parse_check(argc, argv);
 
+    cmd.parse_check(argc, argv);
 
     std::string port = cmd.get<std::string>("port");
     int workerNum = cmd.get<int>("workerNum");
-    //create server instance
+
+
+    /*create server instance*/
     server_ns::Server server(port, workerNum);
 
-    //start the event loop
+    /*start the event loop*/
     server.start_server();
 
 }

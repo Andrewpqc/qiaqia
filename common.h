@@ -26,6 +26,13 @@
 #define SERVER_MESSAGE "[%s] say >> %s"
 
 
+#define INITCOLOR(color)  std::string("\033[1;") + std::string(color) + std::string("m")
+#define RED_COLOR "31"
+#define GREEN_COLOR "32"
+#define YELLOW_COLOR "33"
+#define BLUE_COLOR "34"
+#define ZERO_COLOR "0"
+
 
 static inline void addfd(int epFd, int fd, bool enable_et) {
     struct epoll_event ev;
@@ -52,7 +59,6 @@ static inline void set_nonblocking(int fd) {
 
 
 static inline void trim(const char *strIn, char *strOut) {
-
     size_t i, j;
 
     i = 0;
@@ -64,7 +70,9 @@ static inline void trim(const char *strIn, char *strOut) {
 
     while (strIn[j] == ' ')
         --j;
+
     strncpy(strOut, strIn + i, j - i + 1);
+
     strOut[j - i + 1] = '\0';
 }
 

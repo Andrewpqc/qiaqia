@@ -28,8 +28,8 @@
  * debug output in the program*/
 #define __DEVELOPMENT__ 0
 
-#include <string>
 #include <map>
+#include <string>
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
@@ -38,14 +38,18 @@
 #include <ctime> //time
 #include <cstring>
 #include <unistd.h> // close
-#include <pthread.h>
+#include <pthread.h> //pthread_create
 #include <sys/mman.h> // mmap
 #include <fcntl.h>  // fcntl
 #include <sys/epoll.h> //epoll_create epoll_ctl epoll_wait
 #include <sys/socket.h> // socket getaddrinfo/getnameinfo
 #include <netdb.h> //gai_strerror NI_MAXHOST NI_MAXSERV
-#include "error_functions.hpp"
+
+#include "logger.hpp"
 #include "common.h" // addfd set_nonblocking trim
+#include "error_functions.hpp"
+
+using namespace vogro;
 
 /* 监听缓冲队列大小 */
 #define LISTENQ 50
@@ -74,26 +78,33 @@ namespace server_ns {
         std::string clientPort;
         std::string clientNickname;
         std::string joinAt;
-        int connFd;
-        bool isNicknameSet;
-
+        int connFd=0;
+        bool isNicknameSet=false;
     } ClientInfo; // struct ClientInfo
 
-    static std::map<int, ClientInfo> clients;
+
+
     static int listenFd;
     static int epollFd;
-    static std::mutex io_event_mux, clients_map_mux;
+    static std::map<int, ClientInfo> clients;
+
+    static std::mutex io_event_mux;
+    static std::mutex clients_map_mux;
+    static Logger<FilePolicy> &logger=Logger<FilePolicy>::getLoggerInstance("qiaqia.log");
+
 
     class Server {
     private:
         std::string serverPort;
+
 
         int workerNum;
 
         static int broadcast(int sender_fd, char *msg) {
             for (auto it: clients) {
                 if (it.first != sender_fd) {
-                    if (send(it.first, msg, MAXLINE, 0) < 0 && (errno != EAGAIN || errno != EWOULDBLOCK)) {
+                    if (send(it.first, msg, MAXLINE, 0) < 0
+                        && (errno != EAGAIN || errno != EWOULDBLOCK)) {
                         return -1;
                     }
                 }
@@ -390,7 +401,8 @@ namespace server_ns {
             // format the msg to be send to clients
             sprintf(message, SERVER_MESSAGE, clients[connfd].clientNickname.c_str(), byte_stream.c_str());
 
-            printf("消息：%s\n", byte_stream.c_str());
+//            printf("消息：%s\n", byte_stream.c_str());
+            logger.LOG_INFO("消息:",byte_stream);
             // broadcast
             if (broadcast(connfd, message) == -1) return -1;
             else return 0;
@@ -404,6 +416,7 @@ namespace server_ns {
             listenFd = 0;
             this->workerNum = workerNum;
         }
+
 
         ~Server() {
             if (close(listenFd) == -1) errExit("close listenFd");
